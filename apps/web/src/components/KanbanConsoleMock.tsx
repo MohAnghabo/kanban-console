@@ -9,6 +9,12 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import type {
+  KanbanConsoleActionCommentPolicy,
+  KanbanConsoleCheckStatus,
+  KanbanConsoleReviewSignalKind,
+  KanbanConsoleSuggestedFixStatus,
+} from "@t3tools/contracts";
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -94,6 +100,7 @@ const stateTone: Record<ConsoleStateId, string> = {
 };
 
 type ArtifactSaveStatusKey = "artifactClean" | "artifactBlocked";
+type ConsoleMessages = ReturnType<typeof getMessages>;
 
 function artifactSaveStatusKey(
   artifact: { readonly status: "clean" | "dirty" | "conflict" } | undefined,
@@ -681,6 +688,62 @@ function ArtifactsView({
   );
 }
 
+function prActionPolicyLabel(
+  policy: KanbanConsoleActionCommentPolicy | undefined,
+  messages: ConsoleMessages,
+): string {
+  switch (policy ?? "sticky") {
+    case "new-comment":
+      return messages.prActionPolicyNewComment;
+    case "sticky":
+      return messages.prActionPolicySticky;
+  }
+}
+
+function prCheckStatusLabel(status: KanbanConsoleCheckStatus, messages: ConsoleMessages): string {
+  switch (status) {
+    case "failing":
+      return messages.prCheckFailing;
+    case "passing":
+      return messages.prCheckPassing;
+    case "pending":
+      return messages.prCheckPending;
+    case "skipped":
+      return messages.prCheckSkipped;
+  }
+}
+
+function prSignalKindLabel(kind: KanbanConsoleReviewSignalKind, messages: ConsoleMessages): string {
+  switch (kind) {
+    case "approval":
+      return messages.prSignalApproval;
+    case "change-request":
+      return messages.prSignalChangeRequest;
+    case "ci-failure":
+      return messages.prSignalCiFailure;
+    case "issue-comment":
+      return messages.prSignalIssueComment;
+    case "review-comment":
+      return messages.prSignalReviewComment;
+  }
+}
+
+function prFixStatusLabel(
+  status: KanbanConsoleSuggestedFixStatus,
+  messages: ConsoleMessages,
+): string {
+  switch (status) {
+    case "blocked":
+      return messages.prFixBlocked;
+    case "eligible":
+      return messages.prFixEligible;
+    case "needs-confirmation":
+      return messages.prFixNeedsConfirmation;
+    case "queued":
+      return messages.prFixQueued;
+  }
+}
+
 function PrWatcherView({
   locale,
   snapshot,
@@ -695,6 +758,7 @@ function PrWatcherView({
       <div className="grid gap-3 lg:grid-cols-3">
         {snapshot.prWatches.map((watch) => {
           const health = kanbanConsoleMockProvider.getPrWatchHealth(watch);
+          const fixes = snapshot.suggestedFixes.filter((fix) => fix.prWatchId === watch.id);
           return (
             <div key={watch.id} className="rounded-md border border-border bg-card p-3">
               <div className="flex items-center justify-between gap-2">
@@ -708,6 +772,68 @@ function PrWatcherView({
                 </Badge>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{watch.title}</p>
+              <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                <DetailRow
+                  label={messages.prPollingInterval}
+                  value={`${watch.pollingIntervalSeconds ?? 60}s`}
+                />
+                <DetailRow
+                  label={messages.prActionPolicy}
+                  value={prActionPolicyLabel(watch.actionCommentPolicy, messages)}
+                />
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.checks}</p>
+                {watch.checks.map((check) => (
+                  <div key={check.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-muted-foreground">{check.name}</span>
+                    <Badge
+                      variant={
+                        check.status === "failing"
+                          ? "error"
+                          : check.status === "pending"
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {prCheckStatusLabel(check.status, messages)}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.prWatcherSignals}</p>
+                {watch.reviewSignals.map((signal) => (
+                  <div key={signal.id} className="space-y-1 rounded border border-border/70 p-2">
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={signal.kind === "ci-failure" ? "error" : "outline"}>
+                        {prSignalKindLabel(signal.kind, messages)}
+                      </Badge>
+                      {signal.trusted ? (
+                        <Badge variant="success">{messages.prTrustedSource}</Badge>
+                      ) : null}
+                      {signal.duplicateSuppressed ? (
+                        <Badge variant="secondary">{messages.prDuplicateSuppressed}</Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{signal.summary}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.prSuggestedFixes}</p>
+                {fixes.map((fix) => (
+                  <div key={fix.id} className="rounded border border-border/70 p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs font-medium">{fix.title}</span>
+                      <Badge variant={fix.status === "eligible" ? "success" : "warning"}>
+                        {prFixStatusLabel(fix.status, messages)}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{fix.command}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}

@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import { IsoDateTime, NonNegativeInt, PositiveInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 
 export const KanbanConsoleLocale = Schema.Literals(["en", "ar"]);
 export type KanbanConsoleLocale = typeof KanbanConsoleLocale.Type;
@@ -34,10 +34,23 @@ export type KanbanConsoleCheckStatus = typeof KanbanConsoleCheckStatus.Type;
 export const KanbanConsoleReviewSignalKind = Schema.Literals([
   "ci-failure",
   "review-comment",
+  "issue-comment",
   "approval",
   "change-request",
 ]);
 export type KanbanConsoleReviewSignalKind = typeof KanbanConsoleReviewSignalKind.Type;
+
+export const KanbanConsolePrWatchSignalSource = Schema.Literals([
+  "check-run",
+  "workflow-run",
+  "review-comment",
+  "review-summary",
+  "issue-comment",
+]);
+export type KanbanConsolePrWatchSignalSource = typeof KanbanConsolePrWatchSignalSource.Type;
+
+export const KanbanConsoleActionCommentPolicy = Schema.Literals(["sticky", "new-comment"]);
+export type KanbanConsoleActionCommentPolicy = typeof KanbanConsoleActionCommentPolicy.Type;
 
 export const KanbanConsoleSuggestedFixStatus = Schema.Literals([
   "eligible",
@@ -206,9 +219,13 @@ export type KanbanConsoleCheckRun = typeof KanbanConsoleCheckRun.Type;
 export const KanbanConsoleReviewSignal = Schema.Struct({
   id: TrimmedNonEmptyString,
   kind: KanbanConsoleReviewSignalKind,
+  sourceKind: Schema.optional(KanbanConsolePrWatchSignalSource),
   source: TrimmedNonEmptyString,
   summary: TrimmedNonEmptyString,
   fingerprint: TrimmedNonEmptyString,
+  url: Schema.optional(TrimmedNonEmptyString),
+  trusted: Schema.optional(Schema.Boolean),
+  duplicateSuppressed: Schema.optional(Schema.Boolean),
   createdAt: IsoDateTime,
 });
 export type KanbanConsoleReviewSignal = typeof KanbanConsoleReviewSignal.Type;
@@ -219,6 +236,8 @@ export const KanbanConsolePullRequestWatch = Schema.Struct({
   pr: TrimmedNonEmptyString,
   title: TrimmedNonEmptyString,
   taskId: TrimmedNonEmptyString,
+  pollingIntervalSeconds: Schema.optional(PositiveInt),
+  actionCommentPolicy: Schema.optional(KanbanConsoleActionCommentPolicy),
   checks: Schema.Array(KanbanConsoleCheckRun),
   reviewSignals: Schema.Array(KanbanConsoleReviewSignal),
   lastSeenAt: IsoDateTime,
@@ -233,8 +252,21 @@ export const KanbanConsoleSuggestedFix = Schema.Struct({
   command: TrimmedNonEmptyString,
   status: KanbanConsoleSuggestedFixStatus,
   guardrails: Schema.Array(TrimmedNonEmptyString),
+  prompt: Schema.optional(TrimmedNonEmptyString),
+  sourceSignalIds: Schema.optional(Schema.Array(TrimmedNonEmptyString)),
 });
 export type KanbanConsoleSuggestedFix = typeof KanbanConsoleSuggestedFix.Type;
+
+export const KanbanConsolePrWatchActionComment = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  prWatchId: TrimmedNonEmptyString,
+  policy: KanbanConsoleActionCommentPolicy,
+  body: TrimmedNonEmptyString,
+  materialStateChanged: Schema.Boolean,
+  duplicateSuppressed: Schema.Boolean,
+  updatedAt: IsoDateTime,
+});
+export type KanbanConsolePrWatchActionComment = typeof KanbanConsolePrWatchActionComment.Type;
 
 export const KanbanConsoleCommandRun = Schema.Struct({
   id: TrimmedNonEmptyString,

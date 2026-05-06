@@ -566,14 +566,14 @@ template repo.
   - Poll PR comments and CI state, then generate suggested fixes.
 - Dependencies: Phase 4.
 - Tasks:
-  - [ ] Poll check runs and workflow runs.
-  - [ ] Poll PR review comments.
-  - [ ] Poll review summaries.
-  - [ ] Poll issue comments on linked PRs and tasks.
-  - [ ] Detect new signals and suppress duplicates.
-  - [ ] Classify failed checks and trusted review comments.
-  - [ ] Generate suggested fix prompts.
-  - [ ] Post or update action comments for material PR state changes.
+  - [x] Poll check runs and workflow runs.
+  - [x] Poll PR review comments.
+  - [x] Poll review summaries.
+  - [x] Poll issue comments on linked PRs and tasks.
+  - [x] Detect new signals and suppress duplicates.
+  - [x] Classify failed checks and trusted review comments.
+  - [x] Generate suggested fix prompts.
+  - [x] Post or update action comments for material PR state changes.
 - Validation:
   - Synthetic fixture tests for CI failure, CI recovery, review comments, duplicate suppression, and stale polling data.
 - Exit criteria:
@@ -1138,3 +1138,57 @@ Append one entry per implementation pass.
     intentionally simple for v1 correctness and auditability. Large artifact
     trees may need cached or batched status reads in the Phase 12 performance
     pass.
+
+### 2026-05-07 - Phase 8 PR watcher and suggested fixes slice
+
+- Command:
+  - `/phase t3-kanban-project-console phase-8`
+- Summary:
+  - Added Phase 8 PR watcher contracts for polling policy, sticky/new-comment
+    action-comment policy, signal source classification, duplicate suppression,
+    suggested-fix prompts, and watcher action comment records.
+  - Added a server-side PR Watcher Provider that polls `gh pr view`,
+    `gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate --slurp`,
+    and explicit `gh issue view --comments` sources for PR conversation and
+    linked task issue comments, then normalizes check runs/workflow runs, review
+    summaries, PR review comments, and issue comments into deduplicated signals
+    and confirmation-gated suggested fix prompts.
+  - Extended the mock PR watcher surface with polling interval, action comment
+    policy, check state, trusted source markers, duplicate suppression, and
+    suggested fixes.
+- Files changed:
+  - `packages/contracts/src/kanbanConsole.ts`
+  - `packages/contracts/src/kanbanConsole.test.ts`
+  - `apps/server/src/kanban/PrWatcherProvider.ts`
+  - `apps/server/src/kanban/PrWatcherProvider.test.ts`
+  - `apps/web/src/kanbanConsoleMock.ts`
+  - `apps/web/src/kanbanConsoleMock.test.ts`
+  - `apps/web/src/components/KanbanConsoleMock.tsx`
+  - `apps/web/src/components/KanbanConsoleMock.browser.tsx`
+  - `docs/tasks/t3-kanban-project-console.md`
+- Validation run:
+  - Command: `bun run --cwd packages/contracts test -- kanbanConsole`
+  - Result: PASS
+  - Command: `bun run --cwd apps/server test -- PrWatcherProvider`
+  - Result: PASS
+  - Command: `bun run --cwd apps/web test -- kanbanConsoleMock`
+  - Result: PASS
+  - Command: `bun run --cwd apps/web test:browser -- KanbanConsoleMock`
+  - Result: PASS
+  - Command: `bun run --cwd packages/contracts typecheck`
+  - Result: PASS
+  - Command: `bun run --cwd apps/server typecheck`
+  - Result: PASS with existing Effect diagnostic messages in unrelated files.
+  - Command: `bun run --cwd apps/web typecheck`
+  - Result: PASS
+- Notes/deviations:
+  - Default PR polling interval is 60 seconds and is represented as
+    configurable watcher data.
+  - Trusted review sources default to `coderabbitai` and `coderabbitai[bot]`,
+    with explicit caller override support.
+  - Action comment behavior defaults to sticky comments to avoid timeline noise;
+    the provider returns redacted/summarized signal metadata and policy metadata
+    but does not perform GitHub writes without a later confirmation-gated
+    integration.
+  - Suggested fixes are prompts only. Auto-fix launch remains deferred to Phase
+    9 and requires explicit confirmation and branch-policy gates.
