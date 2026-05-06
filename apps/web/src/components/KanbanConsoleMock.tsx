@@ -9,6 +9,12 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import type {
+  KanbanConsoleActionCommentPolicy,
+  KanbanConsoleCheckStatus,
+  KanbanConsoleReviewSignalKind,
+  KanbanConsoleSuggestedFixStatus,
+} from "@t3tools/contracts";
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -94,6 +100,7 @@ const stateTone: Record<ConsoleStateId, string> = {
 };
 
 type ArtifactSaveStatusKey = "artifactClean" | "artifactBlocked";
+type ConsoleMessages = ReturnType<typeof getMessages>;
 
 function artifactSaveStatusKey(
   artifact: { readonly status: "clean" | "dirty" | "conflict" } | undefined,
@@ -681,6 +688,62 @@ function ArtifactsView({
   );
 }
 
+function prActionPolicyLabel(
+  policy: KanbanConsoleActionCommentPolicy | undefined,
+  messages: ConsoleMessages,
+): string {
+  switch (policy ?? "sticky") {
+    case "new-comment":
+      return messages.prActionPolicyNewComment;
+    case "sticky":
+      return messages.prActionPolicySticky;
+  }
+}
+
+function prCheckStatusLabel(status: KanbanConsoleCheckStatus, messages: ConsoleMessages): string {
+  switch (status) {
+    case "failing":
+      return messages.prCheckFailing;
+    case "passing":
+      return messages.prCheckPassing;
+    case "pending":
+      return messages.prCheckPending;
+    case "skipped":
+      return messages.prCheckSkipped;
+  }
+}
+
+function prSignalKindLabel(kind: KanbanConsoleReviewSignalKind, messages: ConsoleMessages): string {
+  switch (kind) {
+    case "approval":
+      return messages.prSignalApproval;
+    case "change-request":
+      return messages.prSignalChangeRequest;
+    case "ci-failure":
+      return messages.prSignalCiFailure;
+    case "issue-comment":
+      return messages.prSignalIssueComment;
+    case "review-comment":
+      return messages.prSignalReviewComment;
+  }
+}
+
+function prFixStatusLabel(
+  status: KanbanConsoleSuggestedFixStatus,
+  messages: ConsoleMessages,
+): string {
+  switch (status) {
+    case "blocked":
+      return messages.prFixBlocked;
+    case "eligible":
+      return messages.prFixEligible;
+    case "needs-confirmation":
+      return messages.prFixNeedsConfirmation;
+    case "queued":
+      return messages.prFixQueued;
+  }
+}
+
 function PrWatcherView({
   locale,
   snapshot,
@@ -716,7 +779,7 @@ function PrWatcherView({
                 />
                 <DetailRow
                   label={messages.prActionPolicy}
-                  value={watch.actionCommentPolicy ?? "sticky"}
+                  value={prActionPolicyLabel(watch.actionCommentPolicy, messages)}
                 />
               </div>
               <div className="mt-3 space-y-2">
@@ -733,7 +796,7 @@ function PrWatcherView({
                             : "success"
                       }
                     >
-                      {check.status}
+                      {prCheckStatusLabel(check.status, messages)}
                     </Badge>
                   </div>
                 ))}
@@ -744,7 +807,7 @@ function PrWatcherView({
                   <div key={signal.id} className="space-y-1 rounded border border-border/70 p-2">
                     <div className="flex flex-wrap gap-1">
                       <Badge variant={signal.kind === "ci-failure" ? "error" : "outline"}>
-                        {signal.kind}
+                        {prSignalKindLabel(signal.kind, messages)}
                       </Badge>
                       {signal.trusted ? (
                         <Badge variant="success">{messages.prTrustedSource}</Badge>
@@ -764,7 +827,7 @@ function PrWatcherView({
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-xs font-medium">{fix.title}</span>
                       <Badge variant={fix.status === "eligible" ? "success" : "warning"}>
-                        {fix.status}
+                        {prFixStatusLabel(fix.status, messages)}
                       </Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">{fix.command}</p>

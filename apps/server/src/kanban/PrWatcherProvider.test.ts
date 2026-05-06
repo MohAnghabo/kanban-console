@@ -93,8 +93,11 @@ describe("PrWatcherProvider", () => {
 
       assert.equal(result.watch.pollingIntervalSeconds, 60);
       assert.equal(result.watch.actionCommentPolicy, "sticky");
+      assert.equal(result.watch.checks[0]?.id, "1");
       assert.equal(result.watch.checks[0]?.status, "failing");
       assert.equal(result.watch.reviewSignals[0]?.kind, "ci-failure");
+      assert.equal(result.watch.reviewSignals[0]?.fingerprint, "check-run:1:failing");
+      assert.equal(result.suggestedFixes[0]?.command, "/ship task-1");
       assert.equal(result.suggestedFixes[0]?.status, "eligible");
       assert.equal(result.suggestedFixes[0]?.guardrails.includes("redact-logs"), true);
       assert.equal(result.actionComment.materialStateChanged, true);
@@ -201,7 +204,7 @@ describe("PrWatcherProvider", () => {
         repository: "MohAnghabo/kanban-console",
         prNumber: 14,
         taskId: "task-1",
-        trustedBots: ["coderabbitai", "MohAnghabo"],
+        trustedBots: ["CodeRabbitAI", "MOHANGHABO"],
       });
 
       assert.equal(
@@ -231,6 +234,10 @@ describe("PrWatcherProvider", () => {
         true,
       );
       assert.equal(
+        result.watch.reviewSignals.every((signal) => signal.trusted === true),
+        true,
+      );
+      assert.equal(
         result.suggestedFixes.every((fix) => fix.prompt?.includes("Do not launch auto-fix")),
         true,
       );
@@ -247,7 +254,7 @@ describe("PrWatcherProvider", () => {
         repository: "MohAnghabo/kanban-console",
         prNumber: 14,
         taskId: "task-1",
-        previousFingerprints: ["check-run:Validate:failing"],
+        previousFingerprints: ["check-run:1:failing"],
       });
 
       assert.equal(result.watch.reviewSignals[0]?.duplicateSuppressed, true);

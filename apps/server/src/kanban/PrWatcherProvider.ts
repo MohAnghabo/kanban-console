@@ -150,8 +150,8 @@ function checkStatus(raw: Record<string, unknown>): KanbanConsoleCheckStatus {
 
 function checkId(raw: Record<string, unknown>, index: number): string {
   return (
-    stringValue(raw.databaseId) ??
-    stringValue(raw.id) ??
+    scalarStringValue(raw.databaseId) ??
+    scalarStringValue(raw.id) ??
     stringValue(raw.name)
       ?.toLowerCase()
       .replace(/[^a-z0-9]+/g, "-") ??
@@ -187,7 +187,8 @@ function signalId(prefix: string, fingerprint: string): string {
 }
 
 function trusted(login: string, trustedBots: ReadonlySet<string>): boolean {
-  return trustedBots.has(login) || trustedBots.has(`${login}[bot]`);
+  const normalizedLogin = login.toLowerCase();
+  return trustedBots.has(normalizedLogin) || trustedBots.has(`${normalizedLogin}[bot]`);
 }
 
 function checkSignals(input: {
@@ -197,7 +198,7 @@ function checkSignals(input: {
 }): ReadonlyArray<KanbanConsoleReviewSignal> {
   return input.checks.flatMap((check) => {
     if (check.status !== "failing") return [];
-    const fingerprint = `check-run:${check.name}:${check.status}`;
+    const fingerprint = `check-run:${check.id}:${check.status}`;
     return [
       {
         id: signalId("signal", fingerprint),
@@ -308,10 +309,10 @@ function suggestedFixStatus(
   return signal.trusted ? "eligible" : "needs-confirmation";
 }
 
-function suggestedFixCommand(signal: KanbanConsoleReviewSignal): string {
-  if (signal.kind === "ci-failure") return "/ship t3-kanban-project-console";
+function suggestedFixCommand(signal: KanbanConsoleReviewSignal, taskId: string): string {
+  if (signal.kind === "ci-failure") return `/ship ${taskId}`;
   if (signal.kind === "change-request" || signal.kind === "review-comment") return "/review";
-  return "/orchestrate t3-kanban-project-console";
+  return `/orchestrate ${taskId}`;
 }
 
 function suggestedFixPrompt(signal: KanbanConsoleReviewSignal): string {
@@ -339,7 +340,7 @@ function buildSuggestedFixes(input: {
         signal.kind === "ci-failure"
           ? `Inspect failing ${signal.sourceKind ?? "check"}`
           : `Review ${signal.source} signal`,
-      command: suggestedFixCommand(signal),
+      command: suggestedFixCommand(signal, input.taskId),
       status: suggestedFixStatus(signal),
       guardrails: [
         "requires-confirmation",
@@ -443,7 +444,9 @@ export const make = Effect.fn("PrWatcherProvider.make")(function* () {
   return {
     readWatch: Effect.fn("PrWatcherProvider.readWatch")(function* (input: ReadPrWatchInput) {
       const now = input.now ?? new Date().toISOString();
-      const trustedBots = new Set(input.trustedBots ?? DEFAULT_TRUSTED_BOTS);
+      const trustedBots = new Set(
+        (input.trustedBots ?? DEFAULT_TRUSTED_BOTS).map((login) => login.toLowerCase()),
+      );
       const previousFingerprints = new Set(input.previousFingerprints ?? []);
       const policy = input.actionCommentPolicy ?? "sticky";
       const pollingIntervalSeconds =
