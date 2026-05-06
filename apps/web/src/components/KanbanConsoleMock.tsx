@@ -695,6 +695,7 @@ function PrWatcherView({
       <div className="grid gap-3 lg:grid-cols-3">
         {snapshot.prWatches.map((watch) => {
           const health = kanbanConsoleMockProvider.getPrWatchHealth(watch);
+          const fixes = snapshot.suggestedFixes.filter((fix) => fix.prWatchId === watch.id);
           return (
             <div key={watch.id} className="rounded-md border border-border bg-card p-3">
               <div className="flex items-center justify-between gap-2">
@@ -708,6 +709,68 @@ function PrWatcherView({
                 </Badge>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{watch.title}</p>
+              <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                <DetailRow
+                  label={messages.prPollingInterval}
+                  value={`${watch.pollingIntervalSeconds ?? 60}s`}
+                />
+                <DetailRow
+                  label={messages.prActionPolicy}
+                  value={watch.actionCommentPolicy ?? "sticky"}
+                />
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.checks}</p>
+                {watch.checks.map((check) => (
+                  <div key={check.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-muted-foreground">{check.name}</span>
+                    <Badge
+                      variant={
+                        check.status === "failing"
+                          ? "error"
+                          : check.status === "pending"
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {check.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.prWatcherSignals}</p>
+                {watch.reviewSignals.map((signal) => (
+                  <div key={signal.id} className="space-y-1 rounded border border-border/70 p-2">
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={signal.kind === "ci-failure" ? "error" : "outline"}>
+                        {signal.kind}
+                      </Badge>
+                      {signal.trusted ? (
+                        <Badge variant="success">{messages.prTrustedSource}</Badge>
+                      ) : null}
+                      {signal.duplicateSuppressed ? (
+                        <Badge variant="secondary">{messages.prDuplicateSuppressed}</Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{signal.summary}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                <p className="text-xs font-medium">{messages.prSuggestedFixes}</p>
+                {fixes.map((fix) => (
+                  <div key={fix.id} className="rounded border border-border/70 p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs font-medium">{fix.title}</span>
+                      <Badge variant={fix.status === "eligible" ? "success" : "warning"}>
+                        {fix.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{fix.command}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}

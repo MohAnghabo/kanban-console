@@ -102,6 +102,27 @@ describe("kanbanConsoleMock", () => {
     expect(fixes.map((fix) => isSuggestedFixEligible(fix))).toEqual([true, false]);
   });
 
+  it("exposes Phase 8 PR watcher policy, signals, and suggested prompts", () => {
+    const snapshot = kanbanConsoleMockProvider.readSnapshot();
+    const failingWatch = snapshot.prWatches.find((watch) =>
+      watch.checks.some((check) => check.status === "failing"),
+    );
+
+    expect(failingWatch).toMatchObject({
+      pollingIntervalSeconds: 60,
+      actionCommentPolicy: "sticky",
+    });
+    expect(failingWatch?.reviewSignals.some((signal) => signal.sourceKind === "check-run")).toBe(
+      true,
+    );
+    expect(failingWatch?.reviewSignals.some((signal) => signal.duplicateSuppressed === true)).toBe(
+      true,
+    );
+    expect(snapshot.suggestedFixes.some((fix) => fix.prompt?.includes("smallest safe fix"))).toBe(
+      true,
+    );
+  });
+
   it("exposes mock agent sessions and workflow recipes for card actions", () => {
     const snapshot = kanbanConsoleMockProvider.readSnapshot();
     const sessions = kanbanConsoleMockProvider.listAgentSessions();

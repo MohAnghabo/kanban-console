@@ -46,6 +46,11 @@ describe("KanbanConsoleMock", () => {
           .toBeInTheDocument();
       }
 
+      await page.getByRole("button", { exact: true, name: "PRs" }).click();
+      await expect.element(page.getByText("Polling interval").first()).toBeInTheDocument();
+      await expect.element(page.getByText("Suggested fixes").first()).toBeInTheDocument();
+      await expect.element(page.getByText("Duplicate suppressed").first()).toBeInTheDocument();
+
       await page.getByRole("button", { exact: true, name: "Artifacts" }).click();
       await page.getByRole("button", { name: /docs\/product\/project-console\.md/u }).click();
       await page.getByLabelText("Artifact markdown editor").fill("# Product artifact\n\nUpdated.");

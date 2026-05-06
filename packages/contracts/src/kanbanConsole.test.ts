@@ -7,7 +7,9 @@ import {
   KanbanConsoleArtifactContent,
   KanbanConsoleArtifactWriteRequest,
   KanbanConsoleArtifactWriteResult,
+  KanbanConsolePrWatchActionComment,
   KanbanConsoleSnapshot,
+  KanbanConsoleSuggestedFix,
   KanbanConsoleTaskContextPackage,
   KanbanConsoleTaskTransitionRequest,
 } from "./kanbanConsole.ts";
@@ -20,6 +22,8 @@ const decodeGitFileDiff = Schema.decodeUnknownSync(KanbanConsoleGitFileDiff);
 const decodeArtifactContent = Schema.decodeUnknownSync(KanbanConsoleArtifactContent);
 const decodeArtifactWriteRequest = Schema.decodeUnknownSync(KanbanConsoleArtifactWriteRequest);
 const decodeArtifactWriteResult = Schema.decodeUnknownSync(KanbanConsoleArtifactWriteResult);
+const decodeSuggestedFix = Schema.decodeUnknownSync(KanbanConsoleSuggestedFix);
+const decodePrWatchActionComment = Schema.decodeUnknownSync(KanbanConsolePrWatchActionComment);
 
 describe("kanbanConsole contracts", () => {
   it("decodes a complete mock-runtime snapshot boundary", () => {
@@ -275,5 +279,110 @@ describe("kanbanConsole contracts", () => {
         commentTarget: "issue#43",
       }),
     ).toMatchObject({ status: "applied", commentTarget: "issue#43" });
+  });
+
+  it("decodes PR watcher signals, prompts, and sticky action comments", () => {
+    expect(
+      decodeSnapshot({
+        version: 1,
+        generatedAt: "2026-05-06T13:30:00.000Z",
+        locale: "en",
+        repos: [],
+        boards: [],
+        tasks: [],
+        prWatches: [
+          {
+            id: "watch-pr-14",
+            repo: "kanban-console",
+            pr: "kanban-console#14",
+            title: "Phase 7 artifacts",
+            taskId: "task-1",
+            pollingIntervalSeconds: 60,
+            actionCommentPolicy: "sticky",
+            checks: [{ id: "validate", name: "Validate", status: "failing" }],
+            reviewSignals: [
+              {
+                id: "signal-validate",
+                kind: "ci-failure",
+                sourceKind: "check-run",
+                source: "GitHub Actions",
+                summary: "Validate failed.",
+                fingerprint: "check-run:validate:failure",
+                trusted: true,
+                duplicateSuppressed: false,
+                createdAt: "2026-05-06T13:31:00.000Z",
+              },
+              {
+                id: "signal-review",
+                kind: "review-comment",
+                sourceKind: "review-comment",
+                source: "coderabbitai",
+                summary: "Review comment requires attention.",
+                fingerprint: "review-comment:coderabbitai:abc",
+                trusted: true,
+                duplicateSuppressed: true,
+                createdAt: "2026-05-06T13:32:00.000Z",
+              },
+            ],
+            lastSeenAt: "2026-05-06T13:33:00.000Z",
+          },
+        ],
+        suggestedFixes: [
+          {
+            id: "fix-validate",
+            taskId: "task-1",
+            prWatchId: "watch-pr-14",
+            title: "Inspect failing Validate check",
+            command: "/ship t3-kanban-project-console",
+            status: "eligible",
+            guardrails: ["requires-confirmation", "redact-logs"],
+            prompt: "Inspect the failing Validate check and propose a minimal fix.",
+            sourceSignalIds: ["signal-validate"],
+          },
+        ],
+        commandRuns: [],
+        gitStatuses: [],
+        artifacts: [],
+        gitOpsPolicy: {
+          protectedBranches: ["main"],
+          allowedWorkBranchPrefixes: ["feature/"],
+          destructiveActionsRequireSecondConfirmation: true,
+        },
+        releaseReadiness: {
+          branch: "release/test",
+          gates: [],
+        },
+        agentWorkflows: [],
+      }),
+    ).toMatchObject({
+      prWatches: [{ pollingIntervalSeconds: 60, actionCommentPolicy: "sticky" }],
+      suggestedFixes: [{ sourceSignalIds: ["signal-validate"] }],
+    });
+
+    expect(
+      decodeSuggestedFix({
+        id: "fix-review",
+        taskId: "task-1",
+        prWatchId: "watch-pr-14",
+        title: "Address trusted review comment",
+        command: "/review",
+        status: "needs-confirmation",
+        guardrails: ["trusted-review", "requires-confirmation"],
+        prompt: "Address the trusted review comment without launching auto-fix.",
+        sourceSignalIds: ["signal-review"],
+      }),
+    ).toMatchObject({ status: "needs-confirmation" });
+
+    expect(
+      decodePrWatchActionComment({
+        id: "action-watch-pr-14",
+        prWatchId: "watch-pr-14",
+        policy: "sticky",
+        body: "Kanban Console PR watcher update",
+        materialStateChanged: true,
+        duplicateSuppressed: false,
+        updatedAt: "2026-05-06T13:34:00.000Z",
+      }),
+    ).toMatchObject({ policy: "sticky" });
   });
 });
