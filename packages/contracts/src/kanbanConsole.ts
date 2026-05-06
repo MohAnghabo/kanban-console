@@ -60,6 +60,32 @@ export const KanbanConsoleSuggestedFixStatus = Schema.Literals([
 ]);
 export type KanbanConsoleSuggestedFixStatus = typeof KanbanConsoleSuggestedFixStatus.Type;
 
+export const KanbanConsoleAutoFixStatus = Schema.Literals([
+  "queued",
+  "running",
+  "pushed",
+  "blocked",
+  "exhausted",
+  "clean",
+  "setup-required",
+]);
+export type KanbanConsoleAutoFixStatus = typeof KanbanConsoleAutoFixStatus.Type;
+
+export const KanbanConsoleAutoFixGateKind = Schema.Literals([
+  "trusted-source",
+  "attempt-budget",
+  "finding-fingerprint",
+  "pause-label",
+  "branch-policy",
+  "validation",
+  "ai-loop-credentials",
+  "confirmation",
+]);
+export type KanbanConsoleAutoFixGateKind = typeof KanbanConsoleAutoFixGateKind.Type;
+
+export const KanbanConsoleAutoFixGateStatus = Schema.Literals(["pass", "blocked", "warning"]);
+export type KanbanConsoleAutoFixGateStatus = typeof KanbanConsoleAutoFixGateStatus.Type;
+
 export const KanbanConsoleCommandRunStatus = Schema.Literals([
   "queued",
   "running",
@@ -267,6 +293,52 @@ export const KanbanConsolePrWatchActionComment = Schema.Struct({
   updatedAt: IsoDateTime,
 });
 export type KanbanConsolePrWatchActionComment = typeof KanbanConsolePrWatchActionComment.Type;
+
+export const KanbanConsoleAutoFixPolicy = Schema.Struct({
+  trustedSources: Schema.Array(TrimmedNonEmptyString),
+  maxAttemptsPerFingerprint: PositiveInt,
+  pauseLabels: Schema.Array(TrimmedNonEmptyString),
+  protectedBranches: Schema.Array(TrimmedNonEmptyString),
+  allowedBranchPrefixes: Schema.Array(TrimmedNonEmptyString),
+  requiredValidationCommands: Schema.Array(TrimmedNonEmptyString),
+  aiLoopCredentialsConfigured: Schema.Boolean,
+});
+export type KanbanConsoleAutoFixPolicy = typeof KanbanConsoleAutoFixPolicy.Type;
+
+export const KanbanConsoleAutoFixAttemptRecord = Schema.Struct({
+  fingerprint: TrimmedNonEmptyString,
+  attemptsUsed: NonNegativeInt,
+  maxAttempts: PositiveInt,
+});
+export type KanbanConsoleAutoFixAttemptRecord = typeof KanbanConsoleAutoFixAttemptRecord.Type;
+
+export const KanbanConsoleAutoFixGate = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  kind: KanbanConsoleAutoFixGateKind,
+  status: KanbanConsoleAutoFixGateStatus,
+  message: TrimmedNonEmptyString,
+});
+export type KanbanConsoleAutoFixGate = typeof KanbanConsoleAutoFixGate.Type;
+
+export const KanbanConsoleAutoFixRun = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  taskId: TrimmedNonEmptyString,
+  suggestedFixId: TrimmedNonEmptyString,
+  prWatchId: TrimmedNonEmptyString,
+  command: TrimmedNonEmptyString,
+  status: KanbanConsoleAutoFixStatus,
+  fingerprint: TrimmedNonEmptyString,
+  branch: TrimmedNonEmptyString,
+  attemptsUsed: NonNegativeInt,
+  maxAttempts: PositiveInt,
+  validationCommands: Schema.Array(TrimmedNonEmptyString),
+  gates: Schema.Array(KanbanConsoleAutoFixGate),
+  sourceSignalIds: Schema.Array(TrimmedNonEmptyString),
+  sessionId: Schema.optional(TrimmedNonEmptyString),
+  summary: TrimmedNonEmptyString,
+  updatedAt: IsoDateTime,
+});
+export type KanbanConsoleAutoFixRun = typeof KanbanConsoleAutoFixRun.Type;
 
 export const KanbanConsoleCommandRun = Schema.Struct({
   id: TrimmedNonEmptyString,
@@ -477,5 +549,6 @@ export const KanbanConsoleSnapshot = Schema.Struct({
   releaseReadiness: KanbanConsoleReleaseReadiness,
   agentWorkflows: Schema.Array(KanbanConsoleAgentWorkflow),
   agentSessions: Schema.optional(Schema.Array(KanbanConsoleAgentWorkflowSession)),
+  autoFixRuns: Schema.optional(Schema.Array(KanbanConsoleAutoFixRun)),
 });
 export type KanbanConsoleSnapshot = typeof KanbanConsoleSnapshot.Type;

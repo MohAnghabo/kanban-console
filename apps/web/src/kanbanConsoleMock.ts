@@ -3,6 +3,7 @@ import type {
   KanbanConsoleAgentWorkflow,
   KanbanConsoleAgentWorkflowSession,
   KanbanConsoleArtifact,
+  KanbanConsoleAutoFixRun,
   KanbanConsoleCommandRun,
   KanbanConsoleGitOpsPolicy,
   KanbanConsoleGitStatusSnapshot,
@@ -643,6 +644,45 @@ const agentSessions = [
   },
 ];
 
+const autoFixRuns: KanbanConsoleAutoFixRun[] = [
+  {
+    id: "autofix-fix-pr-1-validate",
+    taskId: "t3-p2-3",
+    suggestedFixId: "fix-pr-1-validate",
+    prWatchId: "watch-pr-1",
+    command: "/ship t3-kanban-project-console",
+    status: "setup-required",
+    fingerprint: "ci:validate:failure",
+    branch: "feature/t3-kanban-phase-9-gated-autofix",
+    attemptsUsed: 0,
+    maxAttempts: 2,
+    validationCommands: ["bun check"],
+    gates: [
+      {
+        id: "trusted-source",
+        kind: "trusted-source",
+        status: "pass",
+        message: "All source signals are trusted.",
+      },
+      {
+        id: "branch-policy",
+        kind: "branch-policy",
+        status: "pass",
+        message: "Branch is eligible for auto-fix.",
+      },
+      {
+        id: "ai-loop-credentials",
+        kind: "ai-loop-credentials",
+        status: "blocked",
+        message: "AI-loop credentials are missing; setup is required.",
+      },
+    ],
+    sourceSignalIds: ["signal-ci"],
+    summary: "Auto-fix is blocked until AI-loop credentials are configured.",
+    updatedAt: "2026-05-07T02:00:00.000Z",
+  },
+];
+
 export const kanbanConsoleMockSnapshot: KanbanConsoleSnapshot = {
   version: 1,
   generatedAt: "2026-05-06T13:30:00.000Z",
@@ -659,6 +699,7 @@ export const kanbanConsoleMockSnapshot: KanbanConsoleSnapshot = {
   releaseReadiness,
   agentWorkflows,
   agentSessions,
+  autoFixRuns,
 };
 
 export interface KanbanConsoleProvider {
@@ -668,6 +709,7 @@ export interface KanbanConsoleProvider {
   ): KanbanConsoleTaskTransitionResult;
   listPrWatches(): readonly KanbanConsolePullRequestWatch[];
   listSuggestedFixes(): readonly KanbanConsoleSuggestedFix[];
+  listAutoFixRuns(): readonly KanbanConsoleAutoFixRun[];
   listAgentSessions(): readonly KanbanConsoleAgentWorkflowSession[];
   getPrWatchHealth(watch: KanbanConsolePullRequestWatch): KanbanConsolePrWatchHealth;
   isSuggestedFixEligible(fix: KanbanConsoleSuggestedFix): boolean;
@@ -685,6 +727,9 @@ export const kanbanConsoleMockProvider: KanbanConsoleProvider = {
   },
   listSuggestedFixes() {
     return kanbanConsoleMockSnapshot.suggestedFixes;
+  },
+  listAutoFixRuns() {
+    return kanbanConsoleMockSnapshot.autoFixRuns ?? [];
   },
   listAgentSessions() {
     return kanbanConsoleMockSnapshot.agentSessions ?? [];
