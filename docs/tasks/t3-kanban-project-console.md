@@ -632,13 +632,13 @@ template repo.
   - Add release branch and tag readiness workflow.
 - Dependencies: Phases 6, 8, and 10.
 - Tasks:
-  - [ ] Evaluate release branch policy.
-  - [ ] Draft release notes from issues, PRs, and artifacts.
-  - [ ] Show required checks and review state.
-  - [ ] Show deployment provider readiness.
-  - [ ] Check tag readiness.
-  - [ ] Post GitHub comments for release preparation actions.
-  - [ ] Keep actual merge/deploy/tag execution confirmation-gated.
+  - [x] Evaluate release branch policy.
+  - [x] Draft release notes from issues, PRs, and artifacts.
+  - [x] Show required checks and review state.
+  - [x] Show deployment provider readiness.
+  - [x] Check tag readiness.
+  - [x] Post GitHub comments for release preparation actions.
+  - [x] Keep actual merge/deploy/tag execution confirmation-gated.
 - Validation:
   - Mock release flow.
   - Fixture tests for eligible and blocked release states.
@@ -1293,3 +1293,52 @@ Append one entry per implementation pass.
     parsed this plan directly to select Phase 10.
   - Adapter availability for setup-heavy tools is modeled as setup-required
     until a later UI/integration pass probes local installations and auth.
+
+### 2026-05-07 - Phase 11 release workflow slice
+
+- Command:
+  - `/phase t3-kanban-project-console phase-11`
+- Summary:
+  - Added shared release workflow contracts for release notes, required checks,
+    review state, deployment provider readiness, preparation comments, and
+    confirmation-gated release action results.
+  - Added a server-side Release Workflow Provider that builds release readiness
+    from branch/tag gates, issues, PRs, product artifacts, required checks,
+    review state, and deployment provider status.
+  - Added a confirmed GitHub preparation-comment path while keeping merge,
+    deploy, and tag execution modeled as confirmation-gated readiness only; the
+    provider does not execute those destructive release actions.
+  - Extended the mock GitOps UI with dense release-preparation rows for policy,
+    gates, notes, required checks, review state, deployment providers, and
+    release actions.
+- Files changed:
+  - `packages/contracts/src/kanbanConsole.ts`
+  - `packages/contracts/src/kanbanConsole.test.ts`
+  - `apps/server/src/kanban/ReleaseWorkflowProvider.ts`
+  - `apps/server/src/kanban/ReleaseWorkflowProvider.test.ts`
+  - `apps/web/src/kanbanConsoleMock.ts`
+  - `apps/web/src/kanbanConsoleMock.test.ts`
+  - `apps/web/src/components/KanbanConsoleMock.tsx`
+  - `docs/tasks/t3-kanban-project-console.md`
+- Validation run:
+  - Command: `bun run --cwd packages/contracts test -- kanbanConsole.test.ts`
+  - Result: PASS; 10 tests passed.
+  - Command: `bun run --cwd apps/server test -- src/kanban/ReleaseWorkflowProvider.test.ts`
+  - Result: PASS; 6 tests passed, including stale generated-gate
+    recomputation and release-comment redaction coverage.
+  - Command: `bun run --cwd apps/web test -- kanbanConsoleMock.test.ts`
+  - Result: PASS; 12 tests passed.
+  - Command: `bun run --cwd apps/web test:browser -- KanbanConsoleMock`
+  - Result: PASS; 1 browser test passed.
+  - Command: `git diff --check`
+  - Result: PASS.
+  - Command: `bun check`
+  - Result: PASS; 15 tasks successful, 134 server test files passed, 1060
+    server tests passed, 4 skipped.
+- Notes/deviations:
+  - Review fixes replace previously generated release gates on recomputation
+    and translate release enum/gate labels through EN/AR message helpers.
+  - Release preparation comments intentionally omit raw command output, review
+    bodies, and secrets.
+  - GitHub Projects remains the live status board; no Project state writes were
+    made.

@@ -11,6 +11,8 @@ import {
   KanbanConsoleArtifactWriteRequest,
   KanbanConsoleArtifactWriteResult,
   KanbanConsolePrWatchActionComment,
+  KanbanConsoleReleaseActionRequest,
+  KanbanConsoleReleaseActionResult,
   KanbanConsoleSnapshot,
   KanbanConsoleSuggestedFix,
   KanbanConsoleTaskContextPackage,
@@ -27,6 +29,8 @@ const decodeArtifactWriteRequest = Schema.decodeUnknownSync(KanbanConsoleArtifac
 const decodeArtifactWriteResult = Schema.decodeUnknownSync(KanbanConsoleArtifactWriteResult);
 const decodeSuggestedFix = Schema.decodeUnknownSync(KanbanConsoleSuggestedFix);
 const decodePrWatchActionComment = Schema.decodeUnknownSync(KanbanConsolePrWatchActionComment);
+const decodeReleaseActionRequest = Schema.decodeUnknownSync(KanbanConsoleReleaseActionRequest);
+const decodeReleaseActionResult = Schema.decodeUnknownSync(KanbanConsoleReleaseActionResult);
 const decodeAutoFixRun = Schema.decodeUnknownSync(KanbanConsoleAutoFixRun);
 const decodeCliAuditRecord = Schema.decodeUnknownSync(KanbanConsoleCliAuditRecord);
 const decodeCliExecutionResult = Schema.decodeUnknownSync(KanbanConsoleCliExecutionResult);
@@ -131,7 +135,45 @@ describe("kanbanConsole contracts", () => {
         branch: "release/test",
         latestTag: "v0.1.0",
         targetTag: "v0.2.0",
+        policy: {
+          prepareOnly: true,
+          mergeRequiresConfirmation: true,
+          deployRequiresConfirmation: true,
+          tagRequiresConfirmation: true,
+          destructiveActionsRequireSecondConfirmation: true,
+        },
         gates: [{ id: "gate-1", label: "Validate", status: "pending" }],
+        notes: [
+          {
+            id: "issue-43",
+            source: "issue",
+            title: "Release workflow",
+            url: "https://github.com/MohAnghabo/kanban-console/issues/43",
+          },
+        ],
+        requiredChecks: [{ id: "check-validate", name: "Validate", status: "passing" }],
+        reviewState: {
+          status: "approved",
+          approvals: 1,
+          changesRequested: 0,
+          pendingReviewers: 0,
+        },
+        deploymentProviders: [{ id: "vercel", label: "Vercel", status: "pending" }],
+        actionComment: {
+          id: "release-comment-1",
+          target: "MohAnghabo/kanban-console#43",
+          body: "Kanban Console release preparation",
+          updatedAt: "2026-05-06T13:30:00.000Z",
+        },
+        actions: [
+          {
+            kind: "tag",
+            status: "blocked",
+            message: "Tag requires confirmation.",
+            requiresConfirmation: true,
+            requiresSecondConfirmation: true,
+          },
+        ],
       },
       agentWorkflows: [
         {
@@ -200,6 +242,29 @@ describe("kanbanConsole contracts", () => {
       "packages/contracts/src/kanbanConsole.old.ts",
     );
     expect(decoded.releaseReadiness.targetTag).toBe("v0.2.0");
+    expect(decoded.releaseReadiness.notes?.[0]?.source).toBe("issue");
+  });
+
+  it("decodes release action requests and confirmation-gated results", () => {
+    expect(
+      decodeReleaseActionRequest({
+        kind: "tag",
+        repository: "MohAnghabo/kanban-console",
+        targetNumber: 43,
+        confirmed: true,
+        secondConfirmed: true,
+      }),
+    ).toMatchObject({ kind: "tag", secondConfirmed: true });
+
+    expect(
+      decodeReleaseActionResult({
+        kind: "deploy",
+        status: "ready",
+        message: "Confirmation captured; execution is intentionally external.",
+        requiresConfirmation: true,
+        requiresSecondConfirmation: true,
+      }),
+    ).toMatchObject({ kind: "deploy", status: "ready" });
   });
 
   it("decodes the shared task context package used by agent launchers", () => {

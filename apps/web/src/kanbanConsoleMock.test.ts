@@ -55,6 +55,13 @@ describe("kanbanConsoleMock", () => {
   it("returns locale-specific labels", () => {
     expect(getMessages("en").consoleTitle).toBe("Kanban Project Console");
     expect(getMessages("ar").consoleTitle).toBe("وحدة تحكم مشروع كانبان");
+    expect(getMessages("ar").releaseActionPrepareComment).toBe("تحضير تعليق");
+    expect(getMessages("ar").releaseSourcePullRequest).toBe("طلب سحب");
+    expect(getMessages("ar").releaseStatusBlocked).toBe("محظور");
+    expect(getMessages("ar").releaseReviewChangesRequested).toBe("تغييرات مطلوبة");
+    expect(getMessages("ar").releaseGateReleaseBranchPolicy).toBe("سياسة فرع الإصدار");
+    expect(getMessages("ar").releaseGateRequiredChecks).toBe("الفحوصات المطلوبة");
+    expect(getMessages("ar").releaseGateDeploymentProviders).toBe("مزودو النشر");
   });
 
   it("previews Kanban transitions before mutating external state", () => {
@@ -174,11 +181,23 @@ describe("kanbanConsoleMock", () => {
     expect(kanbanConsoleMockProvider.readSnapshot().releaseReadiness).toMatchObject({
       latestTag: "v0.4.0",
       targetTag: "v0.5.0",
+      policy: {
+        prepareOnly: true,
+      },
+      reviewState: {
+        status: "approved",
+      },
     });
     expect(
       kanbanConsoleMockProvider
         .readSnapshot()
         .releaseReadiness.gates.some((gate) => gate.id === "gate-tag-readiness"),
     ).toBe(true);
+    expect(kanbanConsoleMockProvider.readSnapshot().releaseReadiness.notes?.length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      kanbanConsoleMockProvider.readSnapshot().releaseReadiness.deploymentProviders?.length,
+    ).toBeGreaterThan(0);
   });
 });
