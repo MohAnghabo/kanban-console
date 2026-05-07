@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   KanbanConsoleAutoFixRun,
+  KanbanConsoleCliAuditRecord,
+  KanbanConsoleCliExecutionResult,
   KanbanConsoleGitFileActionRequest,
   KanbanConsoleGitFileDiff,
   KanbanConsoleArtifactContent,
@@ -26,6 +28,8 @@ const decodeArtifactWriteResult = Schema.decodeUnknownSync(KanbanConsoleArtifact
 const decodeSuggestedFix = Schema.decodeUnknownSync(KanbanConsoleSuggestedFix);
 const decodePrWatchActionComment = Schema.decodeUnknownSync(KanbanConsolePrWatchActionComment);
 const decodeAutoFixRun = Schema.decodeUnknownSync(KanbanConsoleAutoFixRun);
+const decodeCliAuditRecord = Schema.decodeUnknownSync(KanbanConsoleCliAuditRecord);
+const decodeCliExecutionResult = Schema.decodeUnknownSync(KanbanConsoleCliExecutionResult);
 
 describe("kanbanConsole contracts", () => {
   it("decodes a complete mock-runtime snapshot boundary", () => {
@@ -153,12 +157,41 @@ describe("kanbanConsole contracts", () => {
           startedAt: "2026-05-06T10:21:00.000Z",
         },
       ],
+      cliAdapters: [
+        {
+          id: "gh",
+          label: "GitHub CLI",
+          command: "gh",
+          availability: "available",
+          mutationPolicy: "requires-confirmation",
+          timeoutMs: 30000,
+        },
+      ],
+      cliAudit: [
+        {
+          id: "cli-audit-1",
+          tool: "gh",
+          command: "gh",
+          args: ["pr", "checks", "20"],
+          cwd: "/tmp/kanban-console",
+          status: "succeeded",
+          mutates: false,
+          confirmed: false,
+          startedAt: "2026-05-06T10:22:00.000Z",
+          completedAt: "2026-05-06T10:22:01.000Z",
+          durationMs: 1000,
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false,
+        },
+      ],
     });
 
     expect(decoded).toMatchObject({
       version: 1,
       tasks: [{ id: "task-1", column: "ready" }],
       agentSessions: [{ status: "queued" }],
+      cliAdapters: [{ id: "gh" }],
     });
     expect(decoded.gitStatuses[0]?.files.some((file) => file.hunkStaging === "supported")).toBe(
       true,
@@ -426,5 +459,35 @@ describe("kanbanConsole contracts", () => {
       validationCommands: ["bun check"],
     });
     expect(decoded.gates).toContainEqual(expect.objectContaining({ kind: "trusted-source" }));
+  });
+
+  it("decodes CLI adapter audit and execution result contracts", () => {
+    const audit = decodeCliAuditRecord({
+      id: "cli-audit-gh-1",
+      tool: "gh",
+      command: "gh",
+      args: ["api", "repos/MohAnghabo/kanban-console"],
+      cwd: "/tmp/kanban-console",
+      status: "succeeded",
+      mutates: false,
+      confirmed: false,
+      startedAt: "2026-05-07T08:00:00.000Z",
+      completedAt: "2026-05-07T08:00:01.000Z",
+      durationMs: 1000,
+      exitCode: 0,
+      stdoutTruncated: false,
+      stderrTruncated: false,
+    });
+
+    expect(audit).toMatchObject({ tool: "gh", status: "succeeded" });
+    expect(
+      decodeCliExecutionResult({
+        tool: "gh",
+        exitCode: 0,
+        stdout: '{"name":"kanban-console"}',
+        stderr: "",
+        audit,
+      }),
+    ).toMatchObject({ tool: "gh", audit: { command: "gh" } });
   });
 });

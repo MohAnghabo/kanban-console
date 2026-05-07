@@ -71,6 +71,41 @@ export const KanbanConsoleAutoFixStatus = Schema.Literals([
 ]);
 export type KanbanConsoleAutoFixStatus = typeof KanbanConsoleAutoFixStatus.Type;
 
+export const KanbanConsoleCliToolId = Schema.Literals([
+  "gh",
+  "git",
+  "coderabbit",
+  "doppler",
+  "vercel",
+  "render",
+  "bun",
+  "bash",
+]);
+export type KanbanConsoleCliToolId = typeof KanbanConsoleCliToolId.Type;
+
+export const KanbanConsoleCliAdapterAvailability = Schema.Literals([
+  "available",
+  "missing",
+  "setup-required",
+  "disabled",
+]);
+export type KanbanConsoleCliAdapterAvailability = typeof KanbanConsoleCliAdapterAvailability.Type;
+
+export const KanbanConsoleCliMutationPolicy = Schema.Literals([
+  "read-only",
+  "requires-confirmation",
+  "blocked",
+]);
+export type KanbanConsoleCliMutationPolicy = typeof KanbanConsoleCliMutationPolicy.Type;
+
+export const KanbanConsoleCliAuditStatus = Schema.Literals([
+  "succeeded",
+  "failed",
+  "blocked",
+  "timed-out",
+]);
+export type KanbanConsoleCliAuditStatus = typeof KanbanConsoleCliAuditStatus.Type;
+
 export const KanbanConsoleAutoFixGateKind = Schema.Literals([
   "trusted-source",
   "attempt-budget",
@@ -340,6 +375,43 @@ export const KanbanConsoleAutoFixRun = Schema.Struct({
 });
 export type KanbanConsoleAutoFixRun = typeof KanbanConsoleAutoFixRun.Type;
 
+export const KanbanConsoleCliAdapter = Schema.Struct({
+  id: KanbanConsoleCliToolId,
+  label: TrimmedNonEmptyString,
+  command: TrimmedNonEmptyString,
+  availability: KanbanConsoleCliAdapterAvailability,
+  mutationPolicy: KanbanConsoleCliMutationPolicy,
+  timeoutMs: PositiveInt,
+});
+export type KanbanConsoleCliAdapter = typeof KanbanConsoleCliAdapter.Type;
+
+export const KanbanConsoleCliAuditRecord = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  tool: KanbanConsoleCliToolId,
+  command: TrimmedNonEmptyString,
+  args: Schema.Array(Schema.String),
+  cwd: TrimmedNonEmptyString,
+  status: KanbanConsoleCliAuditStatus,
+  mutates: Schema.Boolean,
+  confirmed: Schema.Boolean,
+  startedAt: IsoDateTime,
+  completedAt: IsoDateTime,
+  durationMs: NonNegativeInt,
+  exitCode: Schema.optional(NonNegativeInt),
+  stdoutTruncated: Schema.Boolean,
+  stderrTruncated: Schema.Boolean,
+});
+export type KanbanConsoleCliAuditRecord = typeof KanbanConsoleCliAuditRecord.Type;
+
+export const KanbanConsoleCliExecutionResult = Schema.Struct({
+  tool: KanbanConsoleCliToolId,
+  exitCode: NonNegativeInt,
+  stdout: Schema.String,
+  stderr: Schema.String,
+  audit: KanbanConsoleCliAuditRecord,
+});
+export type KanbanConsoleCliExecutionResult = typeof KanbanConsoleCliExecutionResult.Type;
+
 export const KanbanConsoleCommandRun = Schema.Struct({
   id: TrimmedNonEmptyString,
   label: TrimmedNonEmptyString,
@@ -550,5 +622,7 @@ export const KanbanConsoleSnapshot = Schema.Struct({
   agentWorkflows: Schema.Array(KanbanConsoleAgentWorkflow),
   agentSessions: Schema.optional(Schema.Array(KanbanConsoleAgentWorkflowSession)),
   autoFixRuns: Schema.optional(Schema.Array(KanbanConsoleAutoFixRun)),
+  cliAdapters: Schema.optional(Schema.Array(KanbanConsoleCliAdapter)),
+  cliAudit: Schema.optional(Schema.Array(KanbanConsoleCliAuditRecord)),
 });
 export type KanbanConsoleSnapshot = typeof KanbanConsoleSnapshot.Type;
