@@ -608,21 +608,21 @@ template repo.
   - Integrate external CLI tools safely.
 - Dependencies: Phase 3.
 - Tasks:
-  - [ ] Define adapter contract.
-  - [ ] Implement `gh` adapter.
-  - [ ] Implement `git` adapter.
-  - [ ] Implement `coderabbit` adapter.
-  - [ ] Implement `doppler` adapter.
-  - [ ] Implement `vercel` adapter.
-  - [ ] Implement `render` adapter.
-  - [ ] Implement `bun` adapter.
-  - [ ] Implement constrained `bash` adapter.
-  - [ ] Add redaction and local audit logging to every adapter.
+  - [x] Define adapter contract.
+  - [x] Implement `gh` adapter.
+  - [x] Implement `git` adapter.
+  - [x] Implement `coderabbit` adapter.
+  - [x] Implement `doppler` adapter.
+  - [x] Implement `vercel` adapter.
+  - [x] Implement `render` adapter.
+  - [x] Implement `bun` adapter.
+  - [x] Implement constrained `bash` adapter.
+  - [x] Add redaction and local audit logging to every adapter.
 - Validation:
-  - Missing CLI tests.
-  - Timeout tests.
-  - Redaction tests.
-  - Mutation confirmation tests.
+  - Missing CLI tests: PASS.
+  - Timeout tests: PASS.
+  - Redaction tests: PASS.
+  - Mutation confirmation tests: PASS.
 - Exit criteria:
   - Known tools are available safely from the UI.
 
@@ -680,7 +680,7 @@ template repo.
 - [x] Auto-fix is gated and loop-safe.
 - [ ] Claude command workflows are available.
 - [ ] Codex equivalent workflows are available.
-- [ ] CLI adapters are typed, redacted, timed out, audited, and confirmation-gated.
+- [x] CLI adapters are typed, redacted, timed out, audited, and confirmation-gated.
 - [ ] Git status view supports branch, files, diffs, and staging.
 - [ ] `docs/product` artifacts can be browsed, previewed, and edited.
 - [ ] AR/EN and RTL readiness exist for all user-facing UI.
@@ -1244,3 +1244,52 @@ Append one entry per implementation pass.
     the Phase 10 CLI adapter layer.
   - GitHub Projects remains the live status board; no Project state writes were
     made.
+
+### 2026-05-07 - Phase 10 CLI adapter layer slice
+
+- Command:
+  - `/orchestrate t3-kanban-project-console`
+  - Selected next safe command: `/phase t3-kanban-project-console phase-10`
+- Summary:
+  - Added shared CLI adapter contracts for known tool IDs, availability,
+    mutation policy, audit records, and execution results.
+  - Added a server-side CLI Adapter Provider for `gh`, `git`, `coderabbit`,
+    `doppler`, `vercel`, `render`, `bun`, and constrained `bash` calls.
+  - Centralized adapter redaction for token-like values and secret assignments,
+    pinned commands to caller-supplied cwd, propagated timeouts to the process
+    layer, blocked mutating calls without explicit confirmation, and kept a
+    redacted local audit log for every spawned, blocked, failed, and timed-out
+    adapter attempt.
+  - Constrained `bash` to single-line scripts with explicitly allowed command
+    prefixes instead of raw shell argument pass-through.
+  - Addressed pre-PR review findings by deriving confirmation requirements
+    from adapter metadata, rejecting shell-control operators in constrained
+    bash scripts, and redacting process failure messages before returning them
+    to callers.
+- Files changed:
+  - `packages/contracts/src/kanbanConsole.ts`
+  - `packages/contracts/src/kanbanConsole.test.ts`
+  - `apps/server/src/kanban/CliAdapterProvider.ts`
+  - `apps/server/src/kanban/CliAdapterProvider.test.ts`
+  - `docs/tasks/t3-kanban-project-console.md`
+- Validation run:
+  - Command: `bun run --cwd packages/contracts test -- kanbanConsole`
+  - Result: PASS; 9 tests passed.
+  - Command: `bun run --cwd apps/server test -- CliAdapterProvider`
+  - Result: PASS; 10 tests passed.
+  - Command: `bun run --cwd packages/contracts typecheck`
+  - Result: PASS.
+  - Command: `bun run --cwd apps/server typecheck`
+  - Result: PASS with existing Effect diagnostic messages in unrelated files.
+  - Command: `bun run fmt:check`
+  - Result: PASS.
+  - Command: `git diff --check`
+  - Result: PASS.
+  - Command: `bun check`
+  - Result: PASS; 15 tasks successful, 133 server test files passed, 1052
+    server tests passed, 4 skipped.
+- Notes/deviations:
+  - `scripts/plan-status.ts` is still absent in this fork, so orchestration
+    parsed this plan directly to select Phase 10.
+  - Adapter availability for setup-heavy tools is modeled as setup-required
+    until a later UI/integration pass probes local installations and auth.
