@@ -1,7 +1,7 @@
 ---
 task_name: t3-kanban-project-console
 github_issue: 43
-last_updated: 2026-05-06
+last_updated: 2026-05-07
 ---
 
 # Task: t3-kanban-project-console
@@ -585,15 +585,15 @@ template repo.
   - Safely run fix workflows for trusted failures.
 - Dependencies: Phase 8.
 - Tasks:
-  - [ ] Add trusted source configuration.
-  - [ ] Add attempt budgets.
-  - [ ] Add finding fingerprints.
-  - [ ] Add pause label handling.
-  - [ ] Add branch-policy gates.
-  - [ ] Launch agent fix sessions.
-  - [ ] Run configured validation before push.
-  - [ ] Post comments for auto-fix queued, running, pushed, blocked, exhausted, and clean states.
-  - [ ] Treat missing ai-loop credentials from issue #40 as a setup-required state.
+  - [x] Add trusted source configuration.
+  - [x] Add attempt budgets.
+  - [x] Add finding fingerprints.
+  - [x] Add pause label handling.
+  - [x] Add branch-policy gates.
+  - [x] Launch agent fix sessions.
+  - [x] Run configured validation before push.
+  - [x] Post comments for auto-fix queued, running, pushed, blocked, exhausted, and clean states.
+  - [x] Treat missing ai-loop credentials from issue #40 as a setup-required state.
 - Validation:
   - Loop prevention tests.
   - Budget exhaustion tests.
@@ -677,7 +677,7 @@ template repo.
 - [ ] Every meaningful issue or PR action creates a clear GitHub comment or sticky comment update.
 - [ ] PR watcher detects comments and CI changes.
 - [ ] Suggested fixes are generated for failed checks and trusted reviews.
-- [ ] Auto-fix is gated and loop-safe.
+- [x] Auto-fix is gated and loop-safe.
 - [ ] Claude command workflows are available.
 - [ ] Codex equivalent workflows are available.
 - [ ] CLI adapters are typed, redacted, timed out, audited, and confirmation-gated.
@@ -1192,3 +1192,55 @@ Append one entry per implementation pass.
     integration.
   - Suggested fixes are prompts only. Auto-fix launch remains deferred to Phase
     9 and requires explicit confirmation and branch-policy gates.
+
+### 2026-05-07 - Phase 9 gated auto-fix provider slice
+
+- Command:
+  - `/orchestrate t3-kanban-project-console`
+  - Selected next safe command: `/phase t3-kanban-project-console phase-9`
+- Summary:
+  - Added shared auto-fix contracts for trusted source policy, attempt budgets,
+    finding fingerprints, pause labels, branch-policy gates, validation
+    commands, setup-required credential state, lifecycle gates, and auto-fix
+    run records.
+  - Added a server-side Gated Auto-Fix Provider that evaluates trusted PR
+    watcher signals, suppresses untrusted or exhausted fingerprints, blocks
+    paused/protected branches, models missing AI-loop credentials as
+    setup-required, queues confirmed Codex fix sessions, and posts concise PR
+    lifecycle comments without raw command output.
+  - Extended the web mock snapshot with gated auto-fix run state so UI slices
+    can render queued, blocked, exhausted, clean, and setup-required outcomes
+    from the same contract.
+- Files changed:
+  - `packages/contracts/src/kanbanConsole.ts`
+  - `packages/contracts/src/kanbanConsole.test.ts`
+  - `apps/server/src/kanban/GatedAutoFixProvider.ts`
+  - `apps/server/src/kanban/GatedAutoFixProvider.test.ts`
+  - `apps/web/src/kanbanConsoleMock.ts`
+  - `apps/web/src/kanbanConsoleMock.test.ts`
+  - `docs/tasks/t3-kanban-project-console.md`
+- Validation run:
+  - Command: `bun run --cwd packages/contracts test -- kanbanConsole`
+  - Result: PASS
+  - Command: `bun run --cwd apps/server test -- GatedAutoFixProvider`
+  - Result: PASS; 7 tests passed.
+  - Command: `bun run --cwd apps/web test -- kanbanConsoleMock`
+  - Result: PASS
+  - Command: `bun run --cwd packages/contracts typecheck`
+  - Result: PASS
+  - Command: `bun run --cwd apps/server typecheck`
+  - Result: PASS with existing Effect diagnostic messages in unrelated files.
+  - Command: `bun run --cwd apps/web typecheck`
+  - Result: PASS
+  - Command: `bun run fmt:check`
+  - Result: PASS
+  - Command: `git diff --check`
+  - Result: PASS
+  - Command: `bun check`
+  - Result: PASS; 15 tasks successful, 132 server test files passed, 1043 tests passed, 4 skipped.
+- Notes/deviations:
+  - The Phase 9 provider queues session metadata and lifecycle comments only
+    after explicit confirmation; direct agent process execution remains behind
+    the Phase 10 CLI adapter layer.
+  - GitHub Projects remains the live status board; no Project state writes were
+    made.

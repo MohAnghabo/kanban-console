@@ -137,6 +137,23 @@ describe("kanbanConsoleMock", () => {
     expect(kanbanTasks.some((task) => task.agentSessionStatus === "queued")).toBe(true);
   });
 
+  it("exposes gated auto-fix run states in the mock snapshot", () => {
+    const runs = kanbanConsoleMockProvider.listAutoFixRuns();
+    const [run] = runs;
+
+    expect(run).toMatchObject({
+      status: "setup-required",
+      command: "/ship t3-kanban-project-console",
+      validationCommands: ["bun check"],
+      attemptsUsed: 0,
+      maxAttempts: 2,
+    });
+    expect(
+      run?.gates.some((gate) => gate.kind === "ai-loop-credentials" && gate.status === "blocked"),
+    ).toBe(true);
+    expect(kanbanConsoleMockProvider.readSnapshot().autoFixRuns).toEqual(runs);
+  });
+
   it("exposes Phase 6 GitOps status details in the mock snapshot", () => {
     const [status] = kanbanConsoleMockProvider.readSnapshot().gitStatuses;
 

@@ -2,6 +2,7 @@ import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
+  KanbanConsoleAutoFixRun,
   KanbanConsoleGitFileActionRequest,
   KanbanConsoleGitFileDiff,
   KanbanConsoleArtifactContent,
@@ -24,6 +25,7 @@ const decodeArtifactWriteRequest = Schema.decodeUnknownSync(KanbanConsoleArtifac
 const decodeArtifactWriteResult = Schema.decodeUnknownSync(KanbanConsoleArtifactWriteResult);
 const decodeSuggestedFix = Schema.decodeUnknownSync(KanbanConsoleSuggestedFix);
 const decodePrWatchActionComment = Schema.decodeUnknownSync(KanbanConsolePrWatchActionComment);
+const decodeAutoFixRun = Schema.decodeUnknownSync(KanbanConsoleAutoFixRun);
 
 describe("kanbanConsole contracts", () => {
   it("decodes a complete mock-runtime snapshot boundary", () => {
@@ -384,5 +386,45 @@ describe("kanbanConsole contracts", () => {
         updatedAt: "2026-05-06T13:34:00.000Z",
       }),
     ).toMatchObject({ policy: "sticky" });
+  });
+
+  it("decodes gated auto-fix runs with budgets, gates, and validation commands", () => {
+    const decoded = decodeAutoFixRun({
+      id: "autofix-fix-validate",
+      taskId: "task-1",
+      suggestedFixId: "fix-validate",
+      prWatchId: "watch-pr-14",
+      command: "/ship t3-kanban-project-console",
+      status: "queued",
+      fingerprint: "check-run:1:failing",
+      branch: "feature/t3-kanban-phase-9-gated-autofix",
+      attemptsUsed: 1,
+      maxAttempts: 2,
+      validationCommands: ["bun check"],
+      gates: [
+        {
+          id: "trusted-source",
+          kind: "trusted-source",
+          status: "pass",
+          message: "All source signals are trusted.",
+        },
+        {
+          id: "branch-policy",
+          kind: "branch-policy",
+          status: "pass",
+          message: "Branch is eligible for auto-fix.",
+        },
+      ],
+      sourceSignalIds: ["signal-validate"],
+      sessionId: "agent-task-1-autofix",
+      summary: "Auto-fix queued behind validation gates.",
+      updatedAt: "2026-05-07T02:00:00.000Z",
+    });
+
+    expect(decoded).toMatchObject({
+      status: "queued",
+      validationCommands: ["bun check"],
+    });
+    expect(decoded.gates).toContainEqual(expect.objectContaining({ kind: "trusted-source" }));
   });
 });
