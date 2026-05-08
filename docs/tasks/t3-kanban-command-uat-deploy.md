@@ -133,7 +133,7 @@ Out of scope:
 - The requested environment names are `local`, `staging`, and `production`.
 - Git revert is the primary rollback path.
 - GitHub release/tag creation is in scope and approval-gated.
-- UAT and deploy generated artifacts are local-only unless the maintainer asks
+- UAT and deploy-generated artifacts are local-only unless the maintainer asks
   to promote them into permanent docs.
 - Real GitHub writes remain stop-gated during Atlas UAT.
 
