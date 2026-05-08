@@ -332,4 +332,36 @@ describe("ReleaseWorkflowProvider", () => {
       expect(execute).not.toHaveBeenCalled();
     }).pipe(Effect.provide(layer)),
   );
+
+  it.effect("honors policy when destructive actions do not require second confirmation", () =>
+    Effect.gen(function* () {
+      const provider = yield* ReleaseWorkflowProvider.ReleaseWorkflowProvider;
+      const readiness = provider.build({
+        base: passingBase,
+        policy: {
+          ...policy,
+          destructiveActionsRequireSecondConfirmation: false,
+        },
+        issues: [{ id: "issue-43", source: "issue", title: "Prepare release" }],
+        requiredChecks: [{ id: "check-validate", name: "Validate", status: "passing" }],
+        reviewState: {
+          status: "approved",
+          approvals: 1,
+          changesRequested: 0,
+          pendingReviewers: 0,
+        },
+        deploymentProviders: [{ id: "vercel", label: "Vercel", status: "passing" }],
+      });
+
+      const merge = provider.evaluateAction(readiness, {
+        kind: "merge",
+        repository: "MohAnghabo/kanban-console",
+        targetNumber: 22,
+        confirmed: true,
+      });
+
+      assert.equal(merge.status, "ready");
+      assert.equal(merge.requiresSecondConfirmation, false);
+    }).pipe(Effect.provide(layer)),
+  );
 });

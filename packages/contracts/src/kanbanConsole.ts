@@ -594,7 +594,7 @@ export type KanbanConsoleReleaseActionComment = typeof KanbanConsoleReleaseActio
 export const KanbanConsoleReleaseActionRequest = Schema.Struct({
   kind: KanbanConsoleReleaseActionKind,
   repository: TrimmedNonEmptyString,
-  targetNumber: NonNegativeInt,
+  targetNumber: PositiveInt,
   confirmed: Schema.Boolean,
   secondConfirmed: Schema.optional(Schema.Boolean),
 });

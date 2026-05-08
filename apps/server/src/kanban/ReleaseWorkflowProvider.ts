@@ -76,7 +76,10 @@ export class ReleaseWorkflowProvider extends Context.Service<
 
 function redactSensitiveText(value: string): string {
   return value
-    .replace(/\b(?:ghp|github_pat|doppler|sk|xox[baprs])-[-_A-Za-z0-9]{8,}\b/gu, "[redacted]")
+    .replace(
+      /\b(?:gh[pousr]|github_pat|doppler|sk|xox[baprs])[-_][-_A-Za-z0-9]{8,}\b/gu,
+      "[redacted]",
+    )
     .replace(/\b[A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|KEY)=\S+/giu, "[redacted]");
 }
 
@@ -222,16 +225,18 @@ export function buildReleaseWorkflow(
     notes.length > 0 ? "passing" : "pending",
   );
 
+  const releasePolicy = {
+    prepareOnly: true,
+    mergeRequiresConfirmation: true,
+    deployRequiresConfirmation: true,
+    tagRequiresConfirmation: true,
+    destructiveActionsRequireSecondConfirmation:
+      input.policy.destructiveActionsRequireSecondConfirmation,
+  };
+  const actionReadiness = readinessBase(gates, releasePolicy);
   const readiness: KanbanConsoleReleaseReadiness = {
     ...input.base,
-    policy: {
-      prepareOnly: true,
-      mergeRequiresConfirmation: true,
-      deployRequiresConfirmation: true,
-      tagRequiresConfirmation: true,
-      destructiveActionsRequireSecondConfirmation:
-        input.policy.destructiveActionsRequireSecondConfirmation,
-    },
+    policy: releasePolicy,
     gates,
     notes,
     requiredChecks: requiredChecks.map(checkWithOptionalUrl),
@@ -243,10 +248,10 @@ export function buildReleaseWorkflow(
     },
     deploymentProviders,
     actions: [
-      releaseAction(readinessBase(gates), "prepare-comment", false, false),
-      releaseAction(readinessBase(gates), "merge", false, false),
-      releaseAction(readinessBase(gates), "deploy", false, false),
-      releaseAction(readinessBase(gates), "tag", false, false),
+      releaseAction(actionReadiness, "prepare-comment", false, false),
+      releaseAction(actionReadiness, "merge", false, false),
+      releaseAction(actionReadiness, "deploy", false, false),
+      releaseAction(actionReadiness, "tag", false, false),
     ],
   };
 
@@ -267,12 +272,13 @@ export function buildReleaseWorkflow(
 
 function readinessBase(
   gates: ReadonlyArray<ReleaseGate>,
-): Pick<KanbanConsoleReleaseReadiness, "gates"> {
-  return { gates };
+  policy: NonNullable<KanbanConsoleReleaseReadiness["policy"]>,
+): Pick<KanbanConsoleReleaseReadiness, "gates" | "policy"> {
+  return { gates, policy };
 }
 
 function releaseAction(
-  readiness: Pick<KanbanConsoleReleaseReadiness, "gates">,
+  readiness: Pick<KanbanConsoleReleaseReadiness, "gates" | "policy">,
   kind: KanbanConsoleReleaseActionKind,
   confirmed: boolean,
   secondConfirmed: boolean,
@@ -280,7 +286,8 @@ function releaseAction(
   const destructive = kind === "merge" || kind === "deploy" || kind === "tag";
   const releaseReady = allGatesPassing({ branch: "release/preview", gates: readiness.gates });
   const requiresConfirmation = true;
-  const requiresSecondConfirmation = destructive;
+  const requiresSecondConfirmation =
+    destructive && (readiness.policy?.destructiveActionsRequireSecondConfirmation ?? true);
 
   if (!releaseReady) {
     return {
@@ -300,7 +307,7 @@ function releaseAction(
       requiresSecondConfirmation,
     };
   }
-  if (destructive && !secondConfirmed) {
+  if (requiresSecondConfirmation && !secondConfirmed) {
     return {
       kind,
       status: "blocked",

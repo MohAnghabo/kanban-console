@@ -265,6 +265,15 @@ describe("kanbanConsole contracts", () => {
         requiresSecondConfirmation: true,
       }),
     ).toMatchObject({ kind: "deploy", status: "ready" });
+
+    expect(() =>
+      decodeReleaseActionRequest({
+        kind: "tag",
+        repository: "MohAnghabo/kanban-console",
+        targetNumber: 0,
+        confirmed: true,
+      }),
+    ).toThrow();
   });
 
   it("decodes the shared task context package used by agent launchers", () => {
