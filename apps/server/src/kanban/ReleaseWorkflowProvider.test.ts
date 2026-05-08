@@ -38,6 +38,16 @@ const policy: KanbanConsoleGitOpsPolicy = {
   destructiveActionsRequireSecondConfirmation: true,
 };
 
+const releaseSecretCorpus = [
+  "ghp_1234567890abcdef",
+  "github_pat_1234567890abcdef",
+  "doppler_1234567890abcdef",
+  "sk-1234567890abcdef",
+  "xoxb-1234567890abcdef",
+  "TOKEN=release-secret",
+  "OPENAI_API_KEY=sk-1234567890abcdef",
+] as const;
+
 const passingBase: KanbanConsoleReleaseReadiness = {
   branch: "release/v1.0.0",
   latestTag: "v0.9.0",
@@ -302,6 +312,24 @@ describe("ReleaseWorkflowProvider", () => {
       expect(bodyArg).not.toContain("sk-1234567890abcdef");
     }).pipe(Effect.provide(layer)),
   );
+
+  it("redacts the release secret corpus from generated preparation comments", () => {
+    for (const secret of releaseSecretCorpus) {
+      const body = ReleaseWorkflowProvider.releasePreparationCommentBody({
+        branch: `release/${secret}`,
+        latestTag: `v1.0.0-${secret}`,
+        targetTag: `v1.1.0-${secret}`,
+        gates: [{ id: `gate-${secret}`, label: `Gate ${secret}`, status: "passing" }],
+        notes: [{ id: `note-${secret}`, source: "issue", title: `Note ${secret}` }],
+        deploymentProviders: [
+          { id: `provider-${secret}`, label: `Provider ${secret}`, status: "passing" },
+        ],
+      });
+
+      expect(body).toContain("[redacted]");
+      expect(body).not.toContain(secret);
+    }
+  });
 
   it.effect("captures merge, deploy, and tag confirmations without executing those actions", () =>
     Effect.gen(function* () {

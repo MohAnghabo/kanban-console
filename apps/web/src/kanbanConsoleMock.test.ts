@@ -6,12 +6,14 @@ import {
   getPrWatchHealth,
   getTasksByColumn,
   isSuggestedFixEligible,
+  kanbanColumns,
   kanbanConsoleMockProvider,
   kanbanConsoleMessages,
   kanbanTasks,
   moveTaskToColumn,
   previewTaskTransition,
   type KanbanColumnId,
+  type KanbanTaskMock,
 } from "./kanbanConsoleMock";
 
 describe("kanbanConsoleMock", () => {
@@ -33,6 +35,35 @@ describe("kanbanConsoleMock", () => {
       .toSorted();
 
     expect(groupedTaskIds).toEqual(kanbanTasks.map((task) => task.id).toSorted());
+  });
+
+  it("keeps large board grouping and moves bounded for daily-use monorepos", () => {
+    const [baseTask] = kanbanTasks;
+    expect(baseTask).toBeDefined();
+
+    if (!baseTask) {
+      throw new Error("mock task fixture is incomplete");
+    }
+
+    const largeBoard = Array.from({ length: 12_000 }, (_, index): KanbanTaskMock => {
+      const column = kanbanColumns[index % kanbanColumns.length]?.id ?? "backlog";
+      return {
+        ...baseTask,
+        id: `large-task-${index}`,
+        title: `Large board task ${index}`,
+        column,
+      };
+    });
+
+    const startedAt = performance.now();
+    const grouped = getTasksByColumn(largeBoard);
+    const moved = moveTaskToColumn(largeBoard, "large-task-11998", "done");
+    const durationMs = performance.now() - startedAt;
+
+    expect(grouped.flatMap((column) => column.tasks)).toHaveLength(largeBoard.length);
+    expect(moved.find((task) => task.id === "large-task-11998")?.column).toBe("done");
+    expect(largeBoard.find((task) => task.id === "large-task-11998")?.column).not.toBe("done");
+    expect(durationMs).toBeLessThan(1_000);
   });
 
   it("moves a task without mutating other cards", () => {

@@ -63,6 +63,8 @@
     "preflight": "bun run scripts/preflight/runner.ts",
     "env-audit": "bun preflight --only=env/*",
     "pr:check": "bun run check && bun preflight --cache-only --json >/dev/null && bash scripts/check-pr-readiness.sh",
+    "kanban:hardening-check": "bun run --cwd apps/server test -- src/kanban/ReleaseWorkflowProvider.test.ts src/provider/Layers/ProviderSessionDirectory.test.ts src/environment/Layers/ServerEnvironment.test.ts && bun run --cwd apps/web test -- kanbanConsoleMock.test.ts wsConnectionState.test.ts authBootstrap.test.ts session-logic.test.ts && bun run --cwd apps/web test:browser -- KanbanConsoleMock",
+    "kanban:daily-check": "bun run check && bun run kanban:hardening-check && bun preflight --cache-only --json",
     "adopt:check": "bash scripts/verify-template-adoption.sh --profile minimal",
     "security:audit": "bash scripts/security-audit.sh",
     "codex:sync": "bun run scripts/sync-codex-commands.ts && bun run scripts/sync-codex-environment.ts",

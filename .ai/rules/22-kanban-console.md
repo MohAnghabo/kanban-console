@@ -83,6 +83,11 @@ Use this rule for every product change in this T3 Code fork.
 ## Validation
 
 - Minimum before committing product changes: `bun check`.
+- Release, GitOps, command execution, and secret-redaction changes need
+  cross-layer invariant tests when behavior spans contracts, provider logic,
+  generated comments/audit output, and UI labels. Test the shared schema,
+  server decision path, emitted text redaction, and EN/AR rendering together
+  enough that one layer cannot drift while the others still pass.
 - For governance/adoption changes, also run:
   `bash scripts/verify-template-adoption.sh --profile minimal --manifest /Users/mohanghabo/Projects/ai-starter-pro/.template/adoption/minimal-files.txt`
   and `bun preflight --cache-only --json`.
