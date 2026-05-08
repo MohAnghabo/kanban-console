@@ -1,3 +1,6 @@
+// @effect-diagnostics effect/nodeBuiltinImport:off
+// @effect-diagnostics effect/globalConsole:off
+// CLI sync script: direct Node file APIs and terminal output keep this generator simple and dependency-free.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
