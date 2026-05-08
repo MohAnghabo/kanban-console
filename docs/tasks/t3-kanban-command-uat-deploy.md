@@ -175,14 +175,14 @@ Out of scope:
     surface.
 - Dependencies: Phase 1.
 - Tasks:
-  - [ ] Extend `KanbanConsoleAgentWorkflowCommandId`.
-  - [ ] Extend `AgentWorkflowLauncher` recipe generation for all canonical
+  - [x] Extend `KanbanConsoleAgentWorkflowCommandId`.
+  - [x] Extend `AgentWorkflowLauncher` recipe generation for all canonical
         commands.
-  - [ ] Add an invariant test comparing launcher command IDs against
+  - [x] Add an invariant test comparing launcher command IDs against
         `.claude/commands/*.md`.
-  - [ ] Update mock provider data and UI rendering so workflows are grouped or
+  - [x] Update mock provider data and UI rendering so workflows are grouped or
         fully visible instead of sliced to four.
-  - [ ] Add AR/EN labels for any newly visible command workflow labels.
+  - [x] Add AR/EN labels for any newly visible command workflow labels.
 - Validation:
   - Contract tests
   - Agent workflow launcher tests
@@ -244,9 +244,9 @@ Out of scope:
 - [ ] `/deploy` exists in `.claude/commands` and `.codex/commands`.
 - [ ] `/uat` exists in `.claude/commands` and `.codex/commands`.
 - [ ] `/phase` requires user-story sync review and updates.
-- [ ] Launcher contracts include all canonical command IDs.
-- [ ] Server launcher lists Claude and Codex recipes for all canonical commands.
-- [ ] Mock UI exposes all workflows or grouped workflow access without silent
+- [x] Launcher contracts include all canonical command IDs.
+- [x] Server launcher lists Claude and Codex recipes for all canonical commands.
+- [x] Mock UI exposes all workflows or grouped workflow access without silent
       truncation.
 - [ ] `/uat` can generate an Atlas-ready browser UAT draft from
       `t3-kanban-project-console`.
@@ -256,7 +256,7 @@ Out of scope:
       responsibilities are documented.
 - [ ] No real PII, secrets, or raw logs appear in generated prompts, tests, or
       docs.
-- [ ] AR/EN labels exist for newly user-facing command workflow labels.
+- [x] AR/EN labels exist for newly user-facing command workflow labels.
 
 ## 12. Execution Log
 
@@ -320,3 +320,52 @@ Append one entry per implementation pass.
     and should be included in this PR or split into a tiny hotfix PR.
   - PR #29 review follow-up changed one wording issue in this plan and updated
     the PR readiness checklist after Validate and Release Smoke passed.
+
+### 2026-05-09 - Phase 2 launcher parity
+
+- Command:
+  - `/orchestrate t3-kanban-command-uat-deploy`
+- Summary:
+  - Extended the workflow command contract to include all 19 canonical Claude
+    command runbooks, including `/deploy`, `/uat`, `/plan-status`,
+    `/preflight`, `/env-audit`, `/security-audit`, and
+    `/upgrade-multitenant`.
+  - Updated `AgentWorkflowLauncher` recipe generation so Claude and Codex both
+    receive recipes for every canonical command.
+  - Added an invariant launcher test that compares generated command IDs
+    against `.claude/commands/*.md`.
+  - Updated the mock Kanban snapshot and task detail panel to expose every
+    workflow instead of slicing the action list to four entries.
+  - Added AR/EN workflow labels for the newly visible command actions.
+- Files changed:
+  - `packages/contracts/src/kanbanConsole.ts`
+  - `packages/contracts/src/kanbanConsole.test.ts`
+  - `apps/server/src/kanban/AgentWorkflowLauncher.ts`
+  - `apps/server/src/kanban/AgentWorkflowLauncher.test.ts`
+  - `apps/web/src/kanbanConsoleMock.ts`
+  - `apps/web/src/kanbanConsoleMock.test.ts`
+  - `apps/web/src/components/KanbanConsoleMock.tsx`
+  - `docs/tasks/t3-kanban-command-uat-deploy.md`
+- Validation run:
+  - Command: `bun run --filter @t3tools/contracts test -- kanbanConsole.test.ts`
+  - Result: PASS; 1 test file passed with 11 tests.
+  - Command: `bun run --filter t3 test -- AgentWorkflowLauncher.test.ts`
+  - Result: PASS; 1 test file passed with 6 tests.
+  - Command: `bun run --filter @t3tools/web test -- kanbanConsoleMock.test.ts`
+  - Result: PASS; 1 test file passed with 13 tests.
+  - Command: `bun check`
+  - Result: PASS; 15/15 tasks successful, 134 test files passed and 1 skipped
+    with 1063 tests passed and 4 skipped.
+  - Browser sanity: PASS at `http://localhost:5733/kanban`; EN and AR workflow
+    labels for `/deploy`, `/uat`, `/env-audit`, `/plan-status`,
+    `/security-audit`, and `/upgrade-multitenant` rendered with no visible
+    runtime error.
+- Story sync:
+  - Reviewed `US-003`. No story text changes were required because Phase 2
+    implements the existing full canonical command launcher parity story.
+- Notes/deviations:
+  - `scripts/plan-status.ts` is still absent in this fork, so orchestration used
+    this durable plan directly instead of the unavailable helper.
+  - GitHub issue #28 was closed by the Phase 1 PR merge, but this plan still has
+    Phase 3 and Phase 4 remaining. Reopen or create a follow-up issue before
+    continuing live issue/project tracking.

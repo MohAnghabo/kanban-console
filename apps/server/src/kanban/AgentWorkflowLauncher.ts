@@ -22,16 +22,25 @@ const workflowCommandIds = [
   "plan",
   "phase",
   "execute-task",
+  "plan-status",
   "review",
   "open-pr",
   "ship",
   "extract-pr-learnings",
+  "preflight",
+  "env-audit",
   "pdpl-audit",
   "ifrs-audit",
+  "security-audit",
+  "upgrade-multitenant",
+  "deploy",
+  "uat",
   "orchestrate",
 ] as const satisfies ReadonlyArray<KanbanConsoleAgentWorkflowCommandId>;
 
 const workflowLabels: Record<KanbanConsoleAgentWorkflowCommandId, string> = {
+  deploy: "Deploy readiness",
+  "env-audit": "Environment audit",
   "execute-task": "Execute task",
   "extract-pr-learnings": "Extract PR learnings",
   "ifrs-audit": "IFRS audit",
@@ -41,8 +50,13 @@ const workflowLabels: Record<KanbanConsoleAgentWorkflowCommandId, string> = {
   "pdpl-audit": "PDPL audit",
   phase: "Implement phase",
   plan: "Plan work",
+  "plan-status": "Plan status",
+  preflight: "Preflight",
   review: "Review",
+  "security-audit": "Security audit",
   ship: "Ship readiness",
+  uat: "Draft UAT",
+  "upgrade-multitenant": "Upgrade multitenant",
   "user-stories": "Draft user stories",
 };
 
@@ -128,6 +142,8 @@ function commandFor(
       return `/phase ${options.taskName} ${options.phaseId ?? "phase-1"}`;
     case "execute-task":
       return `/execute-task ${options.issueNumber ?? "<issue-number>"}`;
+    case "plan-status":
+      return `/plan-status ${options.taskName}`;
     case "review":
       return "/review";
     case "open-pr":
@@ -136,10 +152,22 @@ function commandFor(
       return `/ship ${options.taskName}`;
     case "extract-pr-learnings":
       return `/extract-pr-learnings ${options.pullRequestNumber ?? "<pr-number>"}`;
+    case "preflight":
+      return "/preflight";
+    case "env-audit":
+      return "/env-audit";
     case "pdpl-audit":
       return "/pdpl-audit";
     case "ifrs-audit":
       return "/ifrs-audit";
+    case "security-audit":
+      return "/security-audit";
+    case "upgrade-multitenant":
+      return "/upgrade-multitenant";
+    case "deploy":
+      return "/deploy <target> <environment> --prepare-only";
+    case "uat":
+      return `/uat ${options.taskName} --atlas`;
     case "orchestrate":
       return `/orchestrate ${options.taskName}`;
   }
