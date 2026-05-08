@@ -205,6 +205,16 @@ icon = "tool"
 command = "bun run pr:check"
 
 [[actions]]
+name = "kanban:hardening-check"
+icon = "tool"
+command = "bun run kanban:hardening-check"
+
+[[actions]]
+name = "kanban:daily-check"
+icon = "tool"
+command = "bun run kanban:daily-check"
+
+[[actions]]
 name = "Adoption Check"
 icon = "tool"
 command = "bun run adopt:check"

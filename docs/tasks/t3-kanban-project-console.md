@@ -651,13 +651,15 @@ template repo.
   - Prepare the project console for controlled use on real repos.
 - Dependencies: Phases 1-11.
 - Tasks:
-  - [ ] Performance pass for large boards and monorepos.
-  - [ ] Reconnect and restart behavior.
-  - [ ] Keyboard navigation.
-  - [ ] Accessibility checks.
-  - [ ] Documentation for setup and workflows.
-  - [ ] End-to-end smoke suite.
-  - [ ] Governance drift check against this template.
+  - [x] Performance pass for large boards and monorepos.
+  - [x] Reconnect and restart behavior.
+  - [x] Keyboard navigation.
+  - [x] Accessibility checks.
+  - [x] Documentation for setup and workflows.
+  - [x] End-to-end smoke suite.
+  - [x] Governance drift check against this template.
+  - [x] Release/security cross-layer invariant coverage from learning issue
+        `kanban-console#25`.
 - Validation:
   - Full validation command passes.
   - Playwright smoke passes.
@@ -1340,5 +1342,58 @@ Append one entry per implementation pass.
     and translate release enum/gate labels through EN/AR message helpers.
   - Release preparation comments intentionally omit raw command output, review
     bodies, and secrets.
+  - GitHub Projects remains the live status board; no Project state writes were
+    made.
+
+### 2026-05-09 - Phase 12 hardening and daily-use readiness
+
+- Command:
+  - `/phase t3-kanban-project-console phase-12`
+- Summary:
+  - Added a controlled daily-use readiness guide with validation, browser
+    smoke, governance drift, and safe operating rules for real local repos.
+  - Added root `kanban:hardening-check` and `kanban:daily-check` scripts that
+    chain focused hardening coverage, the full local validation suite, Kanban
+    browser smoke, and cache-only preflight.
+  - Codified the PR #24 learning from `kanban-console#25`: release, GitOps,
+    command execution, and redaction behavior needs cross-layer invariant
+    coverage across contracts, provider decisions, emitted text, and UI labels.
+  - Added large-board performance fixture coverage for 12,000 cards to keep
+    board grouping and card moves bounded for daily-use monorepos.
+  - Added explicit reconnect/restart validation to the hardening gate through
+    focused WebSocket, auth bootstrap, session stale-state, provider-session
+    directory, and server environment tests.
+  - Extended the release workflow tests with a reusable secret corpus covering
+    underscore and hyphen token formats plus key/value secret patterns.
+  - Extended the Kanban mock browser smoke with real tab traversal, accessible
+    button-name checks, primary-view activation, and Arabic RTL mode.
+- Files changed:
+  - `package.json`
+  - `.ai/rules/22-kanban-console.md`
+  - `apps/server/src/kanban/ReleaseWorkflowProvider.test.ts`
+  - `apps/web/src/kanbanConsoleMock.test.ts`
+  - `apps/web/src/components/KanbanConsoleMock.browser.tsx`
+  - `docs/kanban-console-daily-use.md`
+  - `docs/tasks/t3-kanban-project-console.md`
+- Validation run:
+  - Command: `bun run --cwd apps/server test -- src/kanban/ReleaseWorkflowProvider.test.ts`
+  - Result: PASS; 8 tests passed.
+  - Command: `bun run --cwd apps/web test -- kanbanConsoleMock.test.ts`
+  - Result: PASS; includes large-board performance fixture coverage.
+  - Command: `bun run kanban:hardening-check`
+  - Result: PASS; release redaction, reconnect/restart, large-board, keyboard,
+    accessibility, and browser smoke coverage passed.
+  - Command: `bun run --cwd apps/web test:browser -- KanbanConsoleMock`
+  - Result: PASS; 2 browser tests passed.
+  - Command: `git diff --check`
+  - Result: PASS.
+  - Command: `bun run kanban:daily-check`
+  - Result: PASS; `bun check`, Kanban browser smoke, and cache-only preflight
+    passed.
+  - Command: `bash scripts/verify-template-adoption.sh --profile minimal --manifest /Users/mohanghabo/Projects/ai-starter-pro/.template/adoption/minimal-files.txt`
+  - Result: PASS.
+- Notes/deviations:
+  - `scripts/plan-status.ts` remains absent in this fork, so orchestration used
+    the durable task file and GitHub issue/PR state as fallback.
   - GitHub Projects remains the live status board; no Project state writes were
     made.
