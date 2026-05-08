@@ -12,6 +12,11 @@ import { CSS } from "@dnd-kit/utilities";
 import type {
   KanbanConsoleActionCommentPolicy,
   KanbanConsoleCheckStatus,
+  KanbanConsoleReleaseActionKind,
+  KanbanConsoleReleaseActionStatus,
+  KanbanConsoleReleaseGateStatus,
+  KanbanConsoleReleaseNote,
+  KanbanConsoleReleaseReviewStatus,
   KanbanConsoleReviewSignalKind,
   KanbanConsoleSuggestedFixStatus,
 } from "@t3tools/contracts";
@@ -713,6 +718,116 @@ function prCheckStatusLabel(status: KanbanConsoleCheckStatus, messages: ConsoleM
   }
 }
 
+function releaseStatusVariant(status: KanbanConsoleReleaseGateStatus) {
+  return status === "blocked" ? "error" : status === "pending" ? "warning" : "success";
+}
+
+function releaseGateStatusLabel(
+  status: KanbanConsoleReleaseGateStatus,
+  messages: ConsoleMessages,
+): string {
+  switch (status) {
+    case "blocked":
+      return messages.releaseStatusBlocked;
+    case "passing":
+      return messages.releaseStatusPassing;
+    case "pending":
+      return messages.releaseStatusPending;
+  }
+}
+
+function releaseGateLabel(
+  gate: { readonly id: string; readonly label: string },
+  messages: ConsoleMessages,
+): string {
+  switch (gate.id) {
+    case "gate-clean-worktree":
+      return messages.releaseGateCleanWorktree;
+    case "gate-deployment-providers":
+      return messages.releaseGateDeploymentProviders;
+    case "gate-policy":
+      return messages.releaseGatePolicy;
+    case "gate-release-branch":
+      return messages.releaseGateReleaseBranch;
+    case "gate-release-branch-policy":
+      return messages.releaseGateReleaseBranchPolicy;
+    case "gate-release-notes-draft":
+      return messages.releaseGateReleaseNotesDraft;
+    case "gate-required-checks":
+      return messages.releaseGateRequiredChecks;
+    case "gate-review-state":
+      return messages.releaseGateReviewState;
+    case "gate-smoke":
+      return messages.releaseGateReleaseSmoke;
+    case "gate-tag-readiness":
+      return messages.releaseGateTagReadiness;
+    case "gate-validate":
+      return messages.releaseGateValidate;
+    default:
+      return gate.label;
+  }
+}
+
+function releaseActionStatusLabel(
+  status: KanbanConsoleReleaseActionStatus,
+  messages: ConsoleMessages,
+): string {
+  switch (status) {
+    case "blocked":
+      return messages.releaseStatusBlocked;
+    case "commented":
+      return messages.releaseStatusCommented;
+    case "ready":
+      return messages.releaseStatusReady;
+  }
+}
+
+function releaseNoteSourceLabel(
+  source: KanbanConsoleReleaseNote["source"],
+  messages: ConsoleMessages,
+): string {
+  switch (source) {
+    case "artifact":
+      return messages.releaseSourceArtifact;
+    case "issue":
+      return messages.releaseSourceIssue;
+    case "pull-request":
+      return messages.releaseSourcePullRequest;
+  }
+}
+
+function releaseActionKindLabel(
+  kind: KanbanConsoleReleaseActionKind,
+  messages: ConsoleMessages,
+): string {
+  switch (kind) {
+    case "deploy":
+      return messages.releaseActionDeploy;
+    case "merge":
+      return messages.releaseActionMerge;
+    case "prepare-comment":
+      return messages.releaseActionPrepareComment;
+    case "tag":
+      return messages.releaseActionTag;
+  }
+}
+
+function releaseReviewStatusLabel(
+  status: KanbanConsoleReleaseReviewStatus,
+  messages: ConsoleMessages,
+): string {
+  switch (status) {
+    case "approved":
+      return messages.releaseReviewApproved;
+    case "blocked":
+      return messages.releaseReviewBlocked;
+    case "changes-requested":
+      return messages.releaseReviewChangesRequested;
+    case "pending":
+      return messages.releaseReviewPending;
+  }
+}
+
 function prSignalKindLabel(kind: KanbanConsoleReviewSignalKind, messages: ConsoleMessages): string {
   switch (kind) {
     case "approval":
@@ -913,29 +1028,149 @@ function GitOpsView({
   snapshot: ReturnType<typeof kanbanConsoleMockProvider.readSnapshot>;
 }) {
   const messages = getMessages(locale);
+  const readiness = snapshot.releaseReadiness;
 
   return (
     <MockPanel icon={RocketIcon} title={messages.gitopsHeading}>
-      <div className="grid gap-3 md:grid-cols-3">
-        {snapshot.releaseReadiness.gates.map((gate) => (
-          <div key={gate.id} className="rounded-md border border-border bg-card p-3">
-            <Badge
-              variant={
-                gate.status === "blocked"
-                  ? "error"
-                  : gate.status === "pending"
-                    ? "warning"
-                    : "success"
-              }
-            >
-              {gate.status}
-            </Badge>
-            <h3 className="mt-3 text-sm font-semibold">{gate.label}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Mock health signal for release readiness.
-            </p>
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.2fr]">
+        <div className="space-y-2">
+          <DetailRow label={messages.releaseBranch} value={readiness.branch} />
+          <DetailRow label={messages.releaseLatestTag} value={readiness.latestTag ?? "-"} />
+          <DetailRow label={messages.releaseTargetTag} value={readiness.targetTag ?? "-"} />
+          <DetailRow
+            label={messages.releasePolicy}
+            value={
+              readiness.policy?.prepareOnly
+                ? messages.releasePolicyEnabled
+                : messages.releasePolicyMissing
+            }
+          />
+          {readiness.actionComment ? (
+            <DetailRow
+              label={messages.releaseUpdatedComment}
+              value={readiness.actionComment.target}
+            />
+          ) : null}
+        </div>
+        <div className="divide-y divide-border rounded-md border border-border">
+          {readiness.gates.map((gate) => (
+            <div key={gate.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2">
+              <span className="truncate text-xs font-medium">
+                {releaseGateLabel(gate, messages)}
+              </span>
+              <Badge variant={releaseStatusVariant(gate.status)}>
+                {releaseGateStatusLabel(gate.status, messages)}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-3">
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+            {messages.releaseNotes}
+          </h3>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {(readiness.notes ?? []).map((note) => (
+              <div key={note.id} className="px-3 py-2">
+                <p className="truncate text-xs font-medium">{note.title}</p>
+                <p className="text-[11px] uppercase text-muted-foreground">
+                  {releaseNoteSourceLabel(note.source, messages)}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+            {messages.releaseChecks}
+          </h3>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {(readiness.requiredChecks ?? []).map((check) => (
+              <div
+                key={check.id}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2"
+              >
+                <span className="truncate text-xs font-medium">{check.name}</span>
+                <Badge
+                  variant={
+                    check.status === "failing"
+                      ? "error"
+                      : check.status === "pending"
+                        ? "warning"
+                        : "success"
+                  }
+                >
+                  {prCheckStatusLabel(check.status, messages)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+            {messages.releaseDeployment}
+          </h3>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {(readiness.deploymentProviders ?? []).map((provider) => (
+              <div
+                key={provider.id}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2"
+              >
+                <span className="truncate text-xs font-medium">{provider.label}</span>
+                <Badge variant={releaseStatusVariant(provider.status)}>
+                  {releaseGateStatusLabel(provider.status, messages)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+            {messages.releaseReview}
+          </h3>
+          <div className="divide-y divide-border rounded-md border border-border px-3 py-2">
+            <DetailRow
+              label={messages.releaseReviewStatus}
+              value={releaseReviewStatusLabel(readiness.reviewState?.status ?? "pending", messages)}
+            />
+            <DetailRow
+              label={messages.releaseReviewApprovals}
+              value={String(readiness.reviewState?.approvals ?? 0)}
+            />
+            <DetailRow
+              label={messages.releaseReviewChanges}
+              value={String(readiness.reviewState?.changesRequested ?? 0)}
+            />
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+            {messages.releaseActions}
+          </h3>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {(readiness.actions ?? []).map((action) => (
+              <div
+                key={action.kind}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2"
+              >
+                <span className="truncate text-xs font-medium">
+                  {releaseActionKindLabel(action.kind, messages)}
+                </span>
+                <Badge variant={action.status === "blocked" ? "error" : "success"}>
+                  {releaseActionStatusLabel(action.status, messages)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </MockPanel>
   );

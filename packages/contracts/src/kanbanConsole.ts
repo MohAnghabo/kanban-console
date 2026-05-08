@@ -164,6 +164,25 @@ export type KanbanConsoleArtifactWriteStatus = typeof KanbanConsoleArtifactWrite
 export const KanbanConsoleReleaseGateStatus = Schema.Literals(["passing", "pending", "blocked"]);
 export type KanbanConsoleReleaseGateStatus = typeof KanbanConsoleReleaseGateStatus.Type;
 
+export const KanbanConsoleReleaseReviewStatus = Schema.Literals([
+  "approved",
+  "changes-requested",
+  "pending",
+  "blocked",
+]);
+export type KanbanConsoleReleaseReviewStatus = typeof KanbanConsoleReleaseReviewStatus.Type;
+
+export const KanbanConsoleReleaseActionKind = Schema.Literals([
+  "prepare-comment",
+  "merge",
+  "deploy",
+  "tag",
+]);
+export type KanbanConsoleReleaseActionKind = typeof KanbanConsoleReleaseActionKind.Type;
+
+export const KanbanConsoleReleaseActionStatus = Schema.Literals(["ready", "commented", "blocked"]);
+export type KanbanConsoleReleaseActionStatus = typeof KanbanConsoleReleaseActionStatus.Type;
+
 export const KanbanConsoleGitFileChangeKind = Schema.Literals([
   "added",
   "modified",
@@ -531,10 +550,79 @@ export const KanbanConsoleGitOpsPolicy = Schema.Struct({
 });
 export type KanbanConsoleGitOpsPolicy = typeof KanbanConsoleGitOpsPolicy.Type;
 
+export const KanbanConsoleReleaseNote = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  source: Schema.Literals(["issue", "pull-request", "artifact"]),
+  title: TrimmedNonEmptyString,
+  url: Schema.optional(TrimmedNonEmptyString),
+});
+export type KanbanConsoleReleaseNote = typeof KanbanConsoleReleaseNote.Type;
+
+export const KanbanConsoleReleaseRequiredCheck = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString,
+  status: KanbanConsoleCheckStatus,
+  url: Schema.optional(TrimmedNonEmptyString),
+});
+export type KanbanConsoleReleaseRequiredCheck = typeof KanbanConsoleReleaseRequiredCheck.Type;
+
+export const KanbanConsoleReleaseReviewState = Schema.Struct({
+  status: KanbanConsoleReleaseReviewStatus,
+  approvals: NonNegativeInt,
+  changesRequested: NonNegativeInt,
+  pendingReviewers: NonNegativeInt,
+});
+export type KanbanConsoleReleaseReviewState = typeof KanbanConsoleReleaseReviewState.Type;
+
+export const KanbanConsoleReleaseDeploymentProvider = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  status: KanbanConsoleReleaseGateStatus,
+  detail: Schema.optional(TrimmedNonEmptyString),
+});
+export type KanbanConsoleReleaseDeploymentProvider =
+  typeof KanbanConsoleReleaseDeploymentProvider.Type;
+
+export const KanbanConsoleReleaseActionComment = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  target: TrimmedNonEmptyString,
+  body: TrimmedNonEmptyString,
+  updatedAt: IsoDateTime,
+});
+export type KanbanConsoleReleaseActionComment = typeof KanbanConsoleReleaseActionComment.Type;
+
+export const KanbanConsoleReleaseActionRequest = Schema.Struct({
+  kind: KanbanConsoleReleaseActionKind,
+  repository: TrimmedNonEmptyString,
+  targetNumber: PositiveInt,
+  confirmed: Schema.Boolean,
+  secondConfirmed: Schema.optional(Schema.Boolean),
+});
+export type KanbanConsoleReleaseActionRequest = typeof KanbanConsoleReleaseActionRequest.Type;
+
+export const KanbanConsoleReleaseActionResult = Schema.Struct({
+  kind: KanbanConsoleReleaseActionKind,
+  status: KanbanConsoleReleaseActionStatus,
+  message: TrimmedNonEmptyString,
+  requiresConfirmation: Schema.Boolean,
+  requiresSecondConfirmation: Schema.Boolean,
+  commentTarget: Schema.optional(TrimmedNonEmptyString),
+});
+export type KanbanConsoleReleaseActionResult = typeof KanbanConsoleReleaseActionResult.Type;
+
 export const KanbanConsoleReleaseReadiness = Schema.Struct({
   branch: TrimmedNonEmptyString,
   latestTag: Schema.optional(TrimmedNonEmptyString),
   targetTag: Schema.optional(TrimmedNonEmptyString),
+  policy: Schema.optional(
+    Schema.Struct({
+      prepareOnly: Schema.Boolean,
+      mergeRequiresConfirmation: Schema.Boolean,
+      deployRequiresConfirmation: Schema.Boolean,
+      tagRequiresConfirmation: Schema.Boolean,
+      destructiveActionsRequireSecondConfirmation: Schema.Boolean,
+    }),
+  ),
   gates: Schema.Array(
     Schema.Struct({
       id: TrimmedNonEmptyString,
@@ -542,6 +630,12 @@ export const KanbanConsoleReleaseReadiness = Schema.Struct({
       status: KanbanConsoleReleaseGateStatus,
     }),
   ),
+  notes: Schema.optional(Schema.Array(KanbanConsoleReleaseNote)),
+  requiredChecks: Schema.optional(Schema.Array(KanbanConsoleReleaseRequiredCheck)),
+  reviewState: Schema.optional(KanbanConsoleReleaseReviewState),
+  deploymentProviders: Schema.optional(Schema.Array(KanbanConsoleReleaseDeploymentProvider)),
+  actionComment: Schema.optional(KanbanConsoleReleaseActionComment),
+  actions: Schema.optional(Schema.Array(KanbanConsoleReleaseActionResult)),
 });
 export type KanbanConsoleReleaseReadiness = typeof KanbanConsoleReleaseReadiness.Type;
 
