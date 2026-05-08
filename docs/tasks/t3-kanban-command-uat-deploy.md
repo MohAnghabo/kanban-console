@@ -318,3 +318,5 @@ Append one entry per implementation pass.
 - Notes/deviations:
   - The existing `/kanban` SidebarProvider hotfix remains in the same worktree
     and should be included in this PR or split into a tiny hotfix PR.
+  - PR #29 review follow-up changed one wording issue in this plan and updated
+    the PR readiness checklist after Validate and Release Smoke passed.
