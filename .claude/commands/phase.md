@@ -14,6 +14,15 @@ Execution rules:
 5. Update the task file after coding:
    - Mark checklist items completed/in-progress.
    - Append an execution log entry with files changed and key decisions.
+   - Review the selected user stories whenever phase work changes scope,
+     dependencies, acceptance criteria, data/privacy notes, localization notes,
+     or user-facing behavior.
+   - Update the relevant user stories in `docs/tasks/<task-name>.md` when those
+     story details change, and update the referenced `.local/user-stories/`
+     draft too when it exists and remains the active story source.
+   - If no user-story change is needed, record that the story-sync review was
+     completed in the execution log.
+   - If user stories changed materially, call that out in the PR body.
    - Record any Well-Architected tradeoffs or regressions introduced by the phase.
    - Record any deviations from the plan.
 6. Run `bun check` and report results.
