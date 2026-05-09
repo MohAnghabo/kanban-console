@@ -1,3 +1,8 @@
+// @effect-diagnostics globalDateInEffect:off
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics nodeBuiltinImport:off
+// @effect-diagnostics preferSchemaOverJson:off
+// Parity tests intentionally inspect local command files and assert redacted JSON snapshots.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -1,3 +1,5 @@
+// @effect-diagnostics globalDateInEffect:off
+// Archived shell snapshots use the existing epoch fallback for empty projection timestamps.
 import {
   ChatAttachment,
   IsoDateTime,

@@ -1,3 +1,5 @@
+// @effect-diagnostics importFromBarrel:off
+// Kanban provider tests use the existing Effect/Vitest service-layer harness style.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";

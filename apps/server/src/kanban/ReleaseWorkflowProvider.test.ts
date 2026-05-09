@@ -1,3 +1,7 @@
+// @effect-diagnostics globalDateInEffect:off
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics preferSchemaOverJson:off
+// Tests pass fixed Date values and assert redacted serialized release payloads.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";

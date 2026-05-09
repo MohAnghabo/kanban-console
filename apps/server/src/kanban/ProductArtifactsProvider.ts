@@ -1,3 +1,6 @@
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics nodeBuiltinImport:off
+// Product artifact provider uses Node fs/path directly for local repo artifact reads and guarded writes.
 import { Context, Effect, Layer, Schema } from "effect";
 import { readdir, readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import nodePath from "node:path";

@@ -1,3 +1,5 @@
+// @effect-diagnostics importFromBarrel:off
+// Kanban provider code follows the existing Effect service-layer import style.
 import { Context, Effect, Layer, Schema } from "effect";
 import type {
   KanbanConsoleGitFileActionRequest,

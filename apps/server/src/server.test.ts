@@ -1,3 +1,5 @@
+// @effect-diagnostics globalDate:off
+// Server test fixtures use epoch Date values to match persisted ISO timestamp contracts.
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
 import * as NodeServices from "@effect/platform-node/NodeServices";

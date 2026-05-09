@@ -1,3 +1,5 @@
+// @effect-diagnostics importFromBarrel:off
+// Kanban filesystem tests use the existing Effect service import style.
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect, FileSystem, Layer, Path, PlatformError, Scope } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";

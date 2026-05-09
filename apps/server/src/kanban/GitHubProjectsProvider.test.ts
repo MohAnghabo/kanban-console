@@ -1,3 +1,6 @@
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics preferSchemaOverJson:off
+// Tests mock gh CLI JSON payloads exactly as the provider receives them.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
