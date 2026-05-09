@@ -6,6 +6,7 @@
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
@@ -39,7 +40,7 @@ const layer = AgentWorkflowLauncher.layer.pipe(
 );
 
 function canonicalClaudeCommandIds(): ReadonlyArray<string> {
-  let current = process.cwd();
+  let current = dirname(fileURLToPath(import.meta.url));
   for (let depth = 0; depth < 8; depth += 1) {
     const candidate = join(current, ".claude", "commands");
     if (existsSync(candidate)) {
@@ -62,6 +63,7 @@ describe("AgentWorkflowLauncher", () => {
   it.effect("lists Claude and Codex recipes for the supported command surface", () =>
     Effect.gen(function* () {
       const launcher = yield* AgentWorkflowLauncher.AgentWorkflowLauncher;
+      const canonicalCommandIds = canonicalClaudeCommandIds();
       const recipes = launcher.listRecipes({
         taskName: "t3-kanban-project-console",
         phaseId: "phase-5",
@@ -71,7 +73,7 @@ describe("AgentWorkflowLauncher", () => {
         codexAvailable: false,
       });
 
-      assert.equal(recipes.length, 38);
+      assert.equal(recipes.length, canonicalCommandIds.length * 2);
       expect(recipes).toContainEqual({
         id: "claude-phase",
         label: "Claude Implement phase",

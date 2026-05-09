@@ -97,6 +97,7 @@ describe("kanbanConsoleMock", () => {
     expect(getMessages("ar").releaseGateDeploymentProviders).toBe("مزودو النشر");
     expect(getMessages("ar")[agentWorkflowLabelKeys.deploy]).toBe("جاهزية النشر");
     expect(getMessages("ar")[agentWorkflowLabelKeys.uat]).toBe("إعداد UAT");
+    expect(getMessages("ar").agentWorkflowUnknown).toBe("سير عمل غير معروف");
   });
 
   it("previews Kanban transitions before mutating external state", () => {

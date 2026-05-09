@@ -89,6 +89,19 @@ function runGit(cwd: string, args: ReadonlyArray<string>) {
   });
 }
 
+function runGitAllowNonZero(cwd: string, args: ReadonlyArray<string>) {
+  return Effect.gen(function* () {
+    const git = yield* GitVcsDriver.GitVcsDriver;
+    return yield* git.execute({
+      operation: "ProductArtifactsProvider.test.git",
+      cwd,
+      args,
+      timeoutMs: 10_000,
+      allowNonZeroExit: true,
+    });
+  });
+}
+
 function initRepo() {
   return Effect.gen(function* () {
     const repoDir = yield* makeTempDir("kanban-product-artifacts-");
@@ -176,6 +189,33 @@ describe("ProductArtifactsProvider", () => {
 
         assert.equal(result.status, "blocked");
         assert.equal(result.message.includes("dirty"), true);
+      }),
+    );
+
+    it.effect("treats porcelain add/add conflicts as artifact conflicts", () =>
+      Effect.gen(function* () {
+        const provider = yield* ProductArtifactsProvider.ProductArtifactsProvider;
+        const repoDir = yield* initRepo();
+
+        yield* runGit(repoDir, ["checkout", "main"]);
+        yield* runGit(repoDir, ["checkout", "-b", "artifact-conflict-a"]);
+        yield* writeFile(repoDir, "docs/product/conflict.md", "# Conflict\n\nBranch A.\n");
+        yield* runGit(repoDir, ["add", "docs/product/conflict.md"]);
+        yield* runGit(repoDir, ["commit", "-m", "add conflict artifact a"]);
+        yield* runGit(repoDir, ["checkout", "main"]);
+        yield* writeFile(repoDir, "docs/product/conflict.md", "# Conflict\n\nBranch B.\n");
+        yield* runGit(repoDir, ["add", "docs/product/conflict.md"]);
+        yield* runGit(repoDir, ["commit", "-m", "add conflict artifact b"]);
+        yield* runGit(repoDir, ["checkout", "artifact-conflict-a"]);
+        yield* runGitAllowNonZero(repoDir, ["merge", "main"]);
+
+        const artifact = yield* provider.readArtifact({
+          repoId: "repo-1",
+          cwd: repoDir,
+          path: "docs/product/conflict.md",
+        });
+
+        assert.equal(artifact.status, "conflict");
       }),
     );
 

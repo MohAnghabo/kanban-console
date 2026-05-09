@@ -116,7 +116,9 @@ function agentWorkflowLabel(
     readonly label: string;
   },
 ): string {
-  return workflow.commandId ? messages[agentWorkflowLabelKeys[workflow.commandId]] : workflow.label;
+  return workflow.commandId
+    ? messages[agentWorkflowLabelKeys[workflow.commandId]]
+    : messages.agentWorkflowUnknown;
 }
 
 function artifactSaveStatusKey(
