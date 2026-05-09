@@ -1,3 +1,5 @@
+// @effect-diagnostics importFromBarrel:off
+// Kanban provider tests use the existing Effect/Vitest service-layer harness style.
 import { assert, afterEach, describe, expect, it, vi } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
@@ -177,6 +179,18 @@ describe("CliAdapterProvider", () => {
         })
         .pipe(Effect.flip);
       expect(chained._tag).toBe("CliAdapterProviderError");
+
+      const traversal = yield* provider
+        .execute({
+          tool: "bash",
+          cwd: "/repo",
+          script: "bash scripts/../deploy.sh",
+          allowedBashPrefixes: ["bash scripts/"],
+          mutates: true,
+          confirmed: true,
+        })
+        .pipe(Effect.flip);
+      expect(traversal._tag).toBe("CliAdapterProviderError");
 
       mockRun.mockReturnValueOnce(Effect.succeed(processOutput({ stdout: "OK" })));
       const accepted = yield* provider.execute({

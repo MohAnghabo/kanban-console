@@ -1,8 +1,9 @@
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vitest";
 
 import {
   KanbanConsoleAutoFixRun,
+  KanbanConsoleAgentWorkflowCommandId,
   KanbanConsoleCliAuditRecord,
   KanbanConsoleCliExecutionResult,
   KanbanConsoleGitFileActionRequest,
@@ -32,6 +33,7 @@ const decodePrWatchActionComment = Schema.decodeUnknownSync(KanbanConsolePrWatch
 const decodeReleaseActionRequest = Schema.decodeUnknownSync(KanbanConsoleReleaseActionRequest);
 const decodeReleaseActionResult = Schema.decodeUnknownSync(KanbanConsoleReleaseActionResult);
 const decodeAutoFixRun = Schema.decodeUnknownSync(KanbanConsoleAutoFixRun);
+const decodeAgentWorkflowCommandId = Schema.decodeUnknownSync(KanbanConsoleAgentWorkflowCommandId);
 const decodeCliAuditRecord = Schema.decodeUnknownSync(KanbanConsoleCliAuditRecord);
 const decodeCliExecutionResult = Schema.decodeUnknownSync(KanbanConsoleCliExecutionResult);
 
@@ -563,5 +565,31 @@ describe("kanbanConsole contracts", () => {
         audit,
       }),
     ).toMatchObject({ tool: "gh", audit: { command: "gh" } });
+  });
+
+  it("decodes the complete canonical command launcher surface", () => {
+    expect(
+      [
+        "deploy",
+        "env-audit",
+        "execute-task",
+        "extract-pr-learnings",
+        "ifrs-audit",
+        "init-project",
+        "open-pr",
+        "orchestrate",
+        "pdpl-audit",
+        "phase",
+        "plan",
+        "plan-status",
+        "preflight",
+        "review",
+        "security-audit",
+        "ship",
+        "uat",
+        "upgrade-multitenant",
+        "user-stories",
+      ].map((commandId) => decodeAgentWorkflowCommandId(commandId)),
+    ).toHaveLength(19);
   });
 });

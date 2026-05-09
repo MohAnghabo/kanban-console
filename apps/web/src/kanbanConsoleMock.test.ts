@@ -6,6 +6,8 @@ import {
   getPrWatchHealth,
   getTasksByColumn,
   isSuggestedFixEligible,
+  agentWorkflowCommandIds,
+  agentWorkflowLabelKeys,
   kanbanColumns,
   kanbanConsoleMockProvider,
   kanbanConsoleMessages,
@@ -93,6 +95,9 @@ describe("kanbanConsoleMock", () => {
     expect(getMessages("ar").releaseGateReleaseBranchPolicy).toBe("سياسة فرع الإصدار");
     expect(getMessages("ar").releaseGateRequiredChecks).toBe("الفحوصات المطلوبة");
     expect(getMessages("ar").releaseGateDeploymentProviders).toBe("مزودو النشر");
+    expect(getMessages("ar")[agentWorkflowLabelKeys.deploy]).toBe("جاهزية النشر");
+    expect(getMessages("ar")[agentWorkflowLabelKeys.uat]).toBe("إعداد UAT");
+    expect(getMessages("ar").agentWorkflowUnknown).toBe("سير عمل غير معروف");
   });
 
   it("previews Kanban transitions before mutating external state", () => {
@@ -165,12 +170,12 @@ describe("kanbanConsoleMock", () => {
     const snapshot = kanbanConsoleMockProvider.readSnapshot();
     const sessions = kanbanConsoleMockProvider.listAgentSessions();
 
-    expect(snapshot.agentWorkflows.map((workflow) => workflow.commandId)).toEqual([
-      "phase",
-      "ship",
-      "orchestrate",
-      "review",
-    ]);
+    expect(snapshot.agentWorkflows.map((workflow) => workflow.commandId)).toEqual(
+      agentWorkflowCommandIds,
+    );
+    expect(snapshot.agentWorkflows).toHaveLength(19);
+    expect(snapshot.agentWorkflows.map((workflow) => workflow.commandId)).toContain("deploy");
+    expect(snapshot.agentWorkflows.map((workflow) => workflow.commandId)).toContain("uat");
     expect(sessions.map((session) => session.status)).toEqual(["queued", "blocked"]);
     expect(kanbanTasks.some((task) => task.agentSessionStatus === "queued")).toBe(true);
   });

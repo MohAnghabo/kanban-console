@@ -1,3 +1,6 @@
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics nodeBuiltinImport:off
+// Product artifact provider uses Node fs/path directly for local repo artifact reads and guarded writes.
 import { Context, Effect, Layer, Schema } from "effect";
 import { readdir, readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import nodePath from "node:path";
@@ -114,7 +117,12 @@ function markdownPreview(content: string): string {
 function statusFromPorcelain(output: string): KanbanConsoleArtifactStatus {
   const lines = output.split(/\r?\n/g).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return "clean";
-  return lines.some((line) => line.slice(0, 2).includes("U")) ? "conflict" : "dirty";
+  return lines.some((line) => {
+    const code = line.slice(0, 2);
+    return code.includes("U") || code === "AA" || code === "DD";
+  })
+    ? "conflict"
+    : "dirty";
 }
 
 function artifactId(repoId: string, relativePath: string): string {

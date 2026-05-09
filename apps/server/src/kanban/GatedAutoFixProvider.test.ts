@@ -1,3 +1,6 @@
+// @effect-diagnostics globalDateInEffect:off
+// @effect-diagnostics importFromBarrel:off
+// Tests pass fixed Date values into public provider options to verify deterministic output.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";

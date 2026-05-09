@@ -1,3 +1,6 @@
+// @effect-diagnostics globalDate:off
+// @effect-diagnostics importFromBarrel:off
+// Kanban provider code follows the existing service-layer shape from prior phases; Date injection remains testable through provider options.
 import { Context, Effect, Layer, Schema, SchemaIssue } from "effect";
 import type {
   KanbanColumnId,

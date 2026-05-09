@@ -1,3 +1,6 @@
+// @effect-diagnostics globalDateInEffect:off
+// @effect-diagnostics importFromBarrel:off
+// PR watcher accepts an injected ISO timestamp and only falls back to wall-clock time for polling snapshots.
 import { Context, Effect, Layer, Schema, SchemaIssue } from "effect";
 import type {
   KanbanConsoleActionCommentPolicy,

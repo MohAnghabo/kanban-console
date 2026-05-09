@@ -1,4 +1,12 @@
+// @effect-diagnostics globalDateInEffect:off
+// @effect-diagnostics importFromBarrel:off
+// @effect-diagnostics nodeBuiltinImport:off
+// @effect-diagnostics preferSchemaOverJson:off
+// Parity tests intentionally inspect local command files and assert redacted JSON snapshots.
 import { afterEach, assert, describe, expect, it, vi } from "@effect/vitest";
+import { existsSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect, Layer } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
@@ -31,6 +39,22 @@ const layer = AgentWorkflowLauncher.layer.pipe(
   ),
 );
 
+function canonicalClaudeCommandIds(): ReadonlyArray<string> {
+  let current = dirname(fileURLToPath(import.meta.url));
+  for (let depth = 0; depth < 8; depth += 1) {
+    const candidate = join(current, ".claude", "commands");
+    if (existsSync(candidate)) {
+      return readdirSync(candidate)
+        .filter((file) => file.endsWith(".md"))
+        .map((file) => file.replace(/\.md$/, ""))
+        .toSorted();
+    }
+    current = dirname(current);
+  }
+
+  throw new Error("Unable to locate .claude/commands for command-surface parity test.");
+}
+
 afterEach(() => {
   execute.mockReset();
 });
@@ -39,6 +63,7 @@ describe("AgentWorkflowLauncher", () => {
   it.effect("lists Claude and Codex recipes for the supported command surface", () =>
     Effect.gen(function* () {
       const launcher = yield* AgentWorkflowLauncher.AgentWorkflowLauncher;
+      const canonicalCommandIds = canonicalClaudeCommandIds();
       const recipes = launcher.listRecipes({
         taskName: "t3-kanban-project-console",
         phaseId: "phase-5",
@@ -48,7 +73,7 @@ describe("AgentWorkflowLauncher", () => {
         codexAvailable: false,
       });
 
-      assert.equal(recipes.length, 24);
+      assert.equal(recipes.length, canonicalCommandIds.length * 2);
       expect(recipes).toContainEqual({
         id: "claude-phase",
         label: "Claude Implement phase",
@@ -65,6 +90,39 @@ describe("AgentWorkflowLauncher", () => {
         commandId: "extract-pr-learnings",
         available: false,
       });
+      expect(recipes).toContainEqual({
+        id: "claude-deploy",
+        label: "Claude Deploy readiness",
+        agent: "Claude",
+        command: "/deploy <target> <environment> --prepare-only",
+        commandId: "deploy",
+        available: true,
+      });
+      expect(recipes).toContainEqual({
+        id: "codex-uat",
+        label: "Codex Draft UAT",
+        agent: "Codex",
+        command: "/uat t3-kanban-project-console --atlas",
+        commandId: "uat",
+        available: false,
+      });
+    }).pipe(Effect.provide(layer)),
+  );
+
+  it.effect("keeps workflow recipes aligned with canonical Claude commands", () =>
+    Effect.gen(function* () {
+      const launcher = yield* AgentWorkflowLauncher.AgentWorkflowLauncher;
+      const recipes = launcher.listRecipes({
+        taskName: "t3-kanban-project-console",
+        phaseId: "phase-5",
+        issueNumber: 43,
+        pullRequestNumber: 7,
+        claudeAvailable: true,
+        codexAvailable: true,
+      });
+
+      const commandIds = Array.from(new Set(recipes.map((recipe) => recipe.commandId))).toSorted();
+      expect(commandIds).toEqual(canonicalClaudeCommandIds());
     }).pipe(Effect.provide(layer)),
   );
 

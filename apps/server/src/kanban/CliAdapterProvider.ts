@@ -1,3 +1,6 @@
+// @effect-diagnostics globalDate:off
+// @effect-diagnostics importFromBarrel:off
+// Kanban provider code follows the existing service-layer shape from prior phases; Date injection remains testable through provider options.
 import { Context, Effect, Layer, Schema } from "effect";
 import type {
   KanbanConsoleCliAdapter,
@@ -151,6 +154,11 @@ function hasUnsafeBashCharacters(script: string): boolean {
   );
 }
 
+function hasPathTraversalAfterPrefix(script: string, allowedPrefix: string): boolean {
+  const remainder = script.slice(allowedPrefix.length);
+  return remainder.split(/[\\/]+/).some((segment) => segment === "..");
+}
+
 function resolveInvocation(input: CliAdapterExecuteInput): {
   readonly command: string;
   readonly args: ReadonlyArray<string>;
@@ -186,11 +194,18 @@ function resolveInvocation(input: CliAdapterExecuteInput): {
   }
 
   const allowedPrefixes = input.allowedBashPrefixes ?? [];
-  const allowed = allowedPrefixes.some((prefix) => input.script?.startsWith(prefix));
+  const allowedPrefix = allowedPrefixes.find((prefix) => input.script?.startsWith(prefix));
+  const allowed = allowedPrefix !== undefined;
   if (!allowed) {
     throw new CliAdapterProviderError({
       operation: "resolveInvocation",
       detail: "The bash adapter requires an explicitly allowed command prefix.",
+    });
+  }
+  if (hasPathTraversalAfterPrefix(input.script, allowedPrefix)) {
+    throw new CliAdapterProviderError({
+      operation: "resolveInvocation",
+      detail: "The bash adapter does not accept path traversal after an allowed prefix.",
     });
   }
 

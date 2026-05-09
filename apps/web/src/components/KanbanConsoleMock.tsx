@@ -11,6 +11,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type {
   KanbanConsoleActionCommentPolicy,
+  KanbanConsoleAgentWorkflowCommandId,
   KanbanConsoleCheckStatus,
   KanbanConsoleReleaseActionKind,
   KanbanConsoleReleaseActionStatus,
@@ -46,6 +47,7 @@ import {
 import {
   consoleStateIds,
   consoleViews,
+  agentWorkflowLabelKeys,
   getLocaleDirection,
   getMessages,
   getTasksByColumn,
@@ -106,6 +108,18 @@ const stateTone: Record<ConsoleStateId, string> = {
 
 type ArtifactSaveStatusKey = "artifactClean" | "artifactBlocked";
 type ConsoleMessages = ReturnType<typeof getMessages>;
+
+function agentWorkflowLabel(
+  messages: ConsoleMessages,
+  workflow: {
+    readonly commandId?: KanbanConsoleAgentWorkflowCommandId | undefined;
+    readonly label: string;
+  },
+): string {
+  return workflow.commandId
+    ? messages[agentWorkflowLabelKeys[workflow.commandId]]
+    : messages.agentWorkflowUnknown;
+}
 
 function artifactSaveStatusKey(
   artifact: { readonly status: "clean" | "dirty" | "conflict" } | undefined,
@@ -554,10 +568,12 @@ function TaskDetailPanel({
         </DetailBlock>
         <DetailBlock title={messages.agentActions}>
           {taskSession ? <DetailRow label="Active" value={taskSession.summary} /> : null}
-          {snapshot.agentWorkflows.slice(0, 4).map((workflow) => (
+          {snapshot.agentWorkflows.map((workflow) => (
             <MockCommand
               key={workflow.id}
-              label={`${workflow.command}${workflow.available ? "" : " · setup required"}`}
+              label={`${agentWorkflowLabel(messages, workflow)}: ${workflow.command}${
+                workflow.available ? "" : ` · ${messages.agentWorkflowSetupRequired}`
+              }`}
             />
           ))}
         </DetailBlock>

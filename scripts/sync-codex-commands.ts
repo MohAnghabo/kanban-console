@@ -1,3 +1,6 @@
+// @effect-diagnostics effect/nodeBuiltinImport:off
+// @effect-diagnostics effect/globalConsole:off
+// CLI sync script: direct Node file APIs and terminal output keep this generator simple and dependency-free.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,8 +25,10 @@ const optionValue = (name: string): string | null => {
   return process.argv[index + 1] ?? null;
 };
 
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const parseFrontmatterValue = (text: string, key: string): string => {
-  const match = new RegExp(`^${key}:\\s*(.+)$`, "m").exec(text);
+  const match = new RegExp(`^${escapeRegExp(key)}:\\s*(.+)$`, "m").exec(text);
   return match?.[1]?.trim() ?? "";
 };
 
@@ -142,4 +147,6 @@ const main = (): void => {
   );
 };
 
-main();
+if (import.meta.main) {
+  main();
+}

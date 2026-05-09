@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 import { IsoDateTime, NonNegativeInt, PositiveInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 
 export const KanbanConsoleLocale = Schema.Literals(["en", "ar"]);
@@ -145,12 +145,19 @@ export const KanbanConsoleAgentWorkflowCommandId = Schema.Literals([
   "plan",
   "phase",
   "execute-task",
+  "plan-status",
   "review",
   "open-pr",
   "ship",
   "extract-pr-learnings",
+  "preflight",
+  "env-audit",
   "pdpl-audit",
   "ifrs-audit",
+  "security-audit",
+  "upgrade-multitenant",
+  "deploy",
+  "uat",
   "orchestrate",
 ]);
 export type KanbanConsoleAgentWorkflowCommandId = typeof KanbanConsoleAgentWorkflowCommandId.Type;
